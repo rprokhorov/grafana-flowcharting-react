@@ -60,16 +60,34 @@ export class XGraph {
       return;
     }
     this._isInitialized = true;
-    this._createGraph();
-    this._display();
-    this._updateOptions();
-    this._initXCells();
-    this._attachHoverListener();
 
-    // Custom stencils (kubernetes, aws, etc.) are fetched asynchronously by
-    // mxStencilRegistry the first time a shape references them. The initial
-    // decode may produce blank cells. Schedule a deferred refresh so the
-    // stencils are picked up once they've been fetched and registered.
+    try {
+      this._createGraph();
+    } catch (e) {
+      console.error('[XGraph] Failed to create graph', e);
+      this._isInitialized = false;
+      return;
+    }
+
+    // _display, _updateOptions, _initXCells may throw when custom stencils
+    // (kubernetes, aws, azure) haven't been fetched yet. mxGraph tries to
+    // call drawShape/getGraphBounds on shapes whose stencil XML is still
+    // loading asynchronously. We catch ALL errors here, let the graph exist
+    // in a partially-rendered state, and rely on _scheduleStencilRefresh()
+    // to re-render once stencils are available.
+    try { this._display(); } catch (e) {
+      console.warn('[XGraph] display error (stencils may still be loading):', e);
+    }
+    try { this._updateOptions(); } catch (e) {
+      console.warn('[XGraph] updateOptions error (stencils may still be loading):', e);
+    }
+    try { this._initXCells(); } catch (e) {
+      console.warn('[XGraph] initXCells error:', e);
+    }
+    try { this._attachHoverListener(); } catch (e) {
+      console.warn('[XGraph] attachHoverListener error:', e);
+    }
+
     this._scheduleStencilRefresh();
   }
 
@@ -80,8 +98,18 @@ export class XGraph {
    */
   private _scheduleStencilRefresh(): void {
     const doRefresh = () => {
-      if (this._isInitialized && this._graph) {
+      if (!this._isInitialized || !this._graph) {
+        return;
+      }
+      try {
         this._graph.refresh();
+        this._updateOptions();
+        // Re-init xcells in case the first attempt failed
+        if (this.xcells.length === 0) {
+          this._initXCells();
+        }
+      } catch (e) {
+        console.warn('[XGraph] deferred refresh error:', e);
       }
     };
     setTimeout(doRefresh, 500);
