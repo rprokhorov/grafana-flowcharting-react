@@ -62,3 +62,36 @@
   background: rgba(220, 0, 0, 0.2);
   color: #ff6666;
 }
+
+/* ─── Cell pick mode ─────────────────────────────────────────────────────── */
+
+/* Apply crosshair to the diagram container when pick mode is active */
+.fc-picking .fc-diagram-container {
+  cursor: crosshair !important;
+}
+
+/* Semi-transparent overlay bar at the top — clicking cancels pick mode */
+.fc-pick-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  background: rgba(250, 176, 5, 0.15);
+  border-bottom: 2px solid rgba(250, 176, 5, 0.7);
+  cursor: default;
+  pointer-events: none; /* clicks pass through to the diagram */
+}
+
+.fc-pick-hint {
+  font-size: 12px;
+  color: rgba(250, 176, 5, 1);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  user-select: none;
+}

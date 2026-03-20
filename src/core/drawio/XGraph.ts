@@ -5,6 +5,7 @@ import { DrawioEngine } from './DrawioEngine';
 import { XCell } from './XCell';
 import type { TSourceTypeKeys, TStyleColorKeys, TStyleAnimKeys, TRuleMapOptions } from '../../types';
 import { GFCONSTANT } from '../../constants';
+import { CellPickerService } from '../CellPickerService';
 import chroma from 'chroma-js';
 
 export type XGraphOptions = {
@@ -359,7 +360,15 @@ export class XGraph {
           this._onCellHoverEnd?.();
         }
       },
-      mouseDown: () => {},
+      mouseDown: (_sender: any, evt: mxMouseEvent) => {
+        if (CellPickerService.isActive()) {
+          const cell = evt.getCell?.();
+          if (cell && cell.id !== '0' && cell.id !== '1') {
+            evt.consume?.();
+            CellPickerService.notifyPick(cell.id);
+          }
+        }
+      },
       mouseUp: () => {},
     });
   }

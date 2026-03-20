@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import type { PanelProps } from '@grafana/data';
 import type { FlowChartingOptions } from '../types';
 import { useDrawioEngine } from '../hooks/useDrawioEngine';
@@ -11,6 +11,7 @@ import { DiagramTooltip } from './DiagramTooltip';
 import { StatusOverlay } from './StatusOverlay';
 import type { TooltipState } from '../store/panelStore';
 import { getDefaultOptions } from '../defaults';
+import { CellPickerService } from '../core/CellPickerService';
 import '../styles/panel.css';
 
 type Props = PanelProps<FlowChartingOptions>;
@@ -28,14 +29,28 @@ export const FlowChartingPanel: React.FC<Props> = ({ data, options, width, heigh
   const { activeFlowchart, activeIndex, total, goNext, goPrev } = useFlowchartManager(flowchartsData);
 
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [isPicking, setIsPicking] = useState(false);
+
+  useEffect(() => {
+    return CellPickerService.onActiveChange(setIsPicking);
+  }, []);
 
   const handleTooltip = useCallback((tp: TooltipState | null) => {
-    setTooltip(tp);
+    // Suppress tooltips during cell-pick mode
+    if (!CellPickerService.isActive()) {
+      setTooltip(tp);
+    }
   }, []);
 
   return (
-    <div className="fc-panel-wrapper" style={{ width, height }}>
+    <div className={`fc-panel-wrapper${isPicking ? ' fc-picking' : ''}`} style={{ width, height }}>
       <StatusOverlay loading={!engineReady} />
+
+      {isPicking && (
+        <div className="fc-pick-overlay" onClick={() => CellPickerService.cancel()}>
+          <span className="fc-pick-hint">Click a cell to capture its ID — or click here to cancel</span>
+        </div>
+      )}
 
       {engineReady && activeFlowchart && (
         <FlowChartRenderer

@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Input, Select } from '@grafana/ui';
 import type { TShapeMapData, TTextMapData, TLinkMapData, TEventMapData } from '../../types';
 import { ShapeMap } from '../../core/rules/mappings/ShapeMap';
 import { TextMap } from '../../core/rules/mappings/TextMap';
 import { LinkMap } from '../../core/rules/mappings/LinkMap';
 import { EventMap } from '../../core/rules/mappings/EventMap';
+import { CellPickerService } from '../../core/CellPickerService';
 
 const COLOR_ON_OPTIONS = [
   { label: 'Never', value: 'n' },
@@ -28,6 +29,40 @@ const STYLE_KEYS = [
   { label: 'gradientColor', value: 'gradientColor' },
 ];
 
+/**
+ * Hook that tracks whether CellPickerService is active for a specific slot.
+ * pickingIndex is the index of the row that initiated the pick, or null.
+ */
+function useCellPicker(onPick: (index: number, cellId: string) => void) {
+  const [pickingIndex, setPickingIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const unsub = CellPickerService.onActiveChange((active) => {
+      if (!active) {
+        setPickingIndex(null);
+      }
+    });
+    return unsub;
+  }, []);
+
+  const startPick = (index: number) => {
+    // Cancel any previous pick from another editor
+    CellPickerService.cancel();
+    setPickingIndex(index);
+    CellPickerService.startPick((cellId) => {
+      setPickingIndex(null);
+      onPick(index, cellId);
+    });
+  };
+
+  const cancelPick = () => {
+    CellPickerService.cancel();
+    setPickingIndex(null);
+  };
+
+  return { pickingIndex, startPick, cancelPick };
+}
+
 // ─── Shape Maps ───────────────────────────────────────────────────────────────
 
 interface ShapeMapsEditorProps {
@@ -41,11 +76,27 @@ export const ShapeMapsEditor: React.FC<ShapeMapsEditorProps> = ({ data, onChange
   const update = (i: number, patch: Partial<TShapeMapData>) =>
     onChange(data.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
 
+  const { pickingIndex, startPick, cancelPick } = useCellPicker((i, cellId) =>
+    update(i, { pattern: cellId })
+  );
+
   return (
     <div>
       {data.map((item, i) => (
         <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, alignItems: 'center' }}>
-          <Input value={item.pattern} onChange={(e) => update(i, { pattern: (e.target as HTMLInputElement).value })} placeholder="pattern" width={16} />
+          <Input
+            value={item.pattern}
+            onChange={(e) => update(i, { pattern: (e.target as HTMLInputElement).value })}
+            placeholder="pattern"
+            width={14}
+          />
+          <Button
+            variant={pickingIndex === i ? 'primary' : 'secondary'}
+            size="sm"
+            icon="crosshair"
+            title="Click to pick a cell from the diagram"
+            onClick={() => pickingIndex === i ? cancelPick() : startPick(i)}
+          />
           <Select options={STYLE_KEYS} value={item.style} onChange={(v) => update(i, { style: v.value as any })} width={14} />
           <Select options={COLOR_ON_OPTIONS} value={item.colorOn} onChange={(v) => update(i, { colorOn: v.value as any })} width={12} />
           <Button variant="destructive" size="sm" icon="trash-alt" onClick={() => remove(i)} />
@@ -69,11 +120,27 @@ export const TextMapsEditor: React.FC<TextMapsEditorProps> = ({ data, onChange }
   const update = (i: number, patch: Partial<TTextMapData>) =>
     onChange(data.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
 
+  const { pickingIndex, startPick, cancelPick } = useCellPicker((i, cellId) =>
+    update(i, { pattern: cellId })
+  );
+
   return (
     <div>
       {data.map((item, i) => (
         <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, alignItems: 'center' }}>
-          <Input value={item.pattern} onChange={(e) => update(i, { pattern: (e.target as HTMLInputElement).value })} placeholder="cell pattern" width={16} />
+          <Input
+            value={item.pattern}
+            onChange={(e) => update(i, { pattern: (e.target as HTMLInputElement).value })}
+            placeholder="cell pattern"
+            width={14}
+          />
+          <Button
+            variant={pickingIndex === i ? 'primary' : 'secondary'}
+            size="sm"
+            icon="crosshair"
+            title="Click to pick a cell from the diagram"
+            onClick={() => pickingIndex === i ? cancelPick() : startPick(i)}
+          />
           <Select options={TEXT_ON_OPTIONS} value={item.textOn} onChange={(v) => update(i, { textOn: v.value as any })} width={14} />
           <Button variant="destructive" size="sm" icon="trash-alt" onClick={() => remove(i)} />
         </div>
@@ -96,12 +163,28 @@ export const LinkMapsEditor: React.FC<LinkMapsEditorProps> = ({ data, onChange }
   const update = (i: number, patch: Partial<TLinkMapData>) =>
     onChange(data.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
 
+  const { pickingIndex, startPick, cancelPick } = useCellPicker((i, cellId) =>
+    update(i, { pattern: cellId })
+  );
+
   return (
     <div>
       {data.map((item, i) => (
         <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, alignItems: 'center' }}>
-          <Input value={item.pattern} onChange={(e) => update(i, { pattern: (e.target as HTMLInputElement).value })} placeholder="cell pattern" width={14} />
-          <Input value={item.linkUrl} onChange={(e) => update(i, { linkUrl: (e.target as HTMLInputElement).value })} placeholder="https://…" width={20} />
+          <Input
+            value={item.pattern}
+            onChange={(e) => update(i, { pattern: (e.target as HTMLInputElement).value })}
+            placeholder="cell pattern"
+            width={12}
+          />
+          <Button
+            variant={pickingIndex === i ? 'primary' : 'secondary'}
+            size="sm"
+            icon="crosshair"
+            title="Click to pick a cell from the diagram"
+            onClick={() => pickingIndex === i ? cancelPick() : startPick(i)}
+          />
+          <Input value={item.linkUrl} onChange={(e) => update(i, { linkUrl: (e.target as HTMLInputElement).value })} placeholder="https://…" width={18} />
           <Select options={LINK_ON_OPTIONS} value={item.linkOn} onChange={(v) => update(i, { linkOn: v.value as any })} width={12} />
           <Button variant="destructive" size="sm" icon="trash-alt" onClick={() => remove(i)} />
         </div>
@@ -124,11 +207,27 @@ export const EventMapsEditor: React.FC<EventMapsEditorProps> = ({ data, onChange
   const update = (i: number, patch: Partial<TEventMapData>) =>
     onChange(data.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
 
+  const { pickingIndex, startPick, cancelPick } = useCellPicker((i, cellId) =>
+    update(i, { pattern: cellId })
+  );
+
   return (
     <div>
       {data.map((item, i) => (
         <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, alignItems: 'center' }}>
-          <Input value={item.pattern} onChange={(e) => update(i, { pattern: (e.target as HTMLInputElement).value })} placeholder="cell pattern" width={14} />
+          <Input
+            value={item.pattern}
+            onChange={(e) => update(i, { pattern: (e.target as HTMLInputElement).value })}
+            placeholder="cell pattern"
+            width={12}
+          />
+          <Button
+            variant={pickingIndex === i ? 'primary' : 'secondary'}
+            size="sm"
+            icon="crosshair"
+            title="Click to pick a cell from the diagram"
+            onClick={() => pickingIndex === i ? cancelPick() : startPick(i)}
+          />
           <Input value={item.value} onChange={(e) => update(i, { value: (e.target as HTMLInputElement).value })} placeholder="value" width={10} />
           <Button variant="destructive" size="sm" icon="trash-alt" onClick={() => remove(i)} />
         </div>
