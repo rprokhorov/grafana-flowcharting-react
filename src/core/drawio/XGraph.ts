@@ -60,11 +60,18 @@ export class XGraph {
       return;
     }
     this._isInitialized = true;
-    this._createGraph();
-    this._display();
-    this._updateOptions();
-    this._initXCells();
-    this._attachHoverListener();
+    try {
+      this._createGraph();
+      this._display();
+      this._updateOptions();
+      this._initXCells();
+      this._attachHoverListener();
+    } catch (e) {
+      this._isInitialized = false;
+      this._graph?.destroy();
+      this._graph = undefined;
+      throw e;
+    }
   }
 
   isInitialized(): boolean {
@@ -237,10 +244,10 @@ export class XGraph {
       }
       // CSV import would go here if needed
     } catch (e) {
-      console.error('[XGraph] Error rendering diagram', e);
-    } finally {
       this._graph.getModel().endUpdate();
+      throw e;
     }
+    this._graph.getModel().endUpdate();
   }
 
   /**

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, Component } from 'react';
 import type { PanelProps } from '@grafana/data';
 import type { FlowChartingOptions } from '../types';
 import { useDrawioEngine } from '../hooks/useDrawioEngine';
@@ -17,6 +17,37 @@ import '../styles/panel.css';
 type Props = PanelProps<FlowChartingOptions>;
 
 const DEFAULTS = getDefaultOptions();
+
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+
+interface EBState { error: string | null }
+
+class DiagramErrorBoundary extends Component<{ children: React.ReactNode }, EBState> {
+  state: EBState = { error: null };
+
+  static getDerivedStateFromError(err: any): EBState {
+    return { error: err?.message ?? String(err) };
+  }
+
+  componentDidUpdate(prevProps: { children: React.ReactNode }) {
+    // Reset when children change (e.g. new XML loaded)
+    if (prevProps.children !== this.props.children && this.state.error) {
+      this.setState({ error: null });
+    }
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 16, color: '#ff6666', fontSize: 13, wordBreak: 'break-word' }}>
+          <strong>Diagram render error:</strong>
+          <pre style={{ marginTop: 8, whiteSpace: 'pre-wrap' }}>{this.state.error}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export const FlowChartingPanel: React.FC<Props> = ({ data, options, width, height }) => {
   // Grafana passes options as {} when a panel is first added — fall back to defaults
@@ -53,17 +84,19 @@ export const FlowChartingPanel: React.FC<Props> = ({ data, options, width, heigh
       )}
 
       {engineReady && activeFlowchart && (
-        <FlowChartRenderer
-          // key= forces remount and mxGraph cleanup when switching flowcharts
-          key={`${activeIndex}-${activeFlowchart.name}`}
-          flowchart={activeFlowchart.data}
-          engineReady={engineReady}
-          metrics={metrics}
-          metricsRevision={metricsRevision}
-          ruleEngine={ruleEngine}
-          rulesRevision={rulesRevision}
-          onTooltip={handleTooltip}
-        />
+        <DiagramErrorBoundary key={`${activeIndex}-${activeFlowchart.name}`}>
+          <FlowChartRenderer
+            // key= forces remount and mxGraph cleanup when switching flowcharts
+            key={`${activeIndex}-${activeFlowchart.name}`}
+            flowchart={activeFlowchart.data}
+            engineReady={engineReady}
+            metrics={metrics}
+            metricsRevision={metricsRevision}
+            ruleEngine={ruleEngine}
+            rulesRevision={rulesRevision}
+            onTooltip={handleTooltip}
+          />
+        </DiagramErrorBoundary>
       )}
 
       {total > 1 && (
