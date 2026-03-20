@@ -25,7 +25,7 @@ export const FlowChartingPanel: React.FC<Props> = ({ data, options, width, heigh
 
   const engineReady = useDrawioEngine();
   const metrics = useMetrics(data);
-  const ruleEngine = useRuleEngine(rulesData);
+  const { ruleEngine, rulesRevision } = useRuleEngine(rulesData);
   const { activeFlowchart, activeIndex, total, goNext, goPrev } = useFlowchartManager(flowchartsData);
 
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
@@ -60,6 +60,7 @@ export const FlowChartingPanel: React.FC<Props> = ({ data, options, width, heigh
           engineReady={engineReady}
           metrics={metrics}
           ruleEngine={ruleEngine}
+          rulesRevision={rulesRevision}
           onTooltip={handleTooltip}
         />
       )}

@@ -1,13 +1,15 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import type { TIRulesHandlerData } from '../types';
 import { RuleEngine } from '../core/rules/RuleEngine';
 
 /**
  * Creates and updates a RuleEngine from the panel options.
- * Returns a stable RuleEngine reference.
+ * Returns the stable RuleEngine reference AND a revision counter that
+ * increments on every rules change — so dependents can react to mutations.
  */
-export function useRuleEngine(rulesData: TIRulesHandlerData): RuleEngine {
+export function useRuleEngine(rulesData: TIRulesHandlerData): { ruleEngine: RuleEngine; rulesRevision: number } {
   const engineRef = useRef<RuleEngine | null>(null);
+  const [rulesRevision, setRulesRevision] = useState(0);
 
   if (engineRef.current === null) {
     engineRef.current = new RuleEngine(rulesData);
@@ -15,7 +17,8 @@ export function useRuleEngine(rulesData: TIRulesHandlerData): RuleEngine {
 
   useEffect(() => {
     engineRef.current!.update(rulesData);
+    setRulesRevision((v) => v + 1);
   }, [rulesData]);
 
-  return engineRef.current;
+  return { ruleEngine: engineRef.current, rulesRevision };
 }

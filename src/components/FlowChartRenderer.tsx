@@ -11,6 +11,7 @@ interface FlowChartRendererProps {
   engineReady: boolean;
   metrics: MetricProcessor;
   ruleEngine: RuleEngine;
+  rulesRevision: number;
   onTooltip: (tooltip: TooltipState | null) => void;
 }
 
@@ -23,6 +24,7 @@ export const FlowChartRenderer: React.FC<FlowChartRendererProps> = ({
   engineReady,
   metrics,
   ruleEngine,
+  rulesRevision,
   onTooltip,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -88,13 +90,13 @@ export const FlowChartRenderer: React.FC<FlowChartRendererProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engineReady, flowchart.xml, flowchart.csv, flowchart.type]);
 
-  // Re-apply rules when metrics or options change (without remounting mxGraph)
+  // Re-apply rules when metrics or rules change (without remounting mxGraph)
   useEffect(() => {
     if (xgraphRef.current?.isInitialized()) {
       applyRules(xgraphRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [metrics, ruleEngine]);
+  }, [metrics, rulesRevision]);
 
   // Update display options without remounting
   useEffect(() => {
