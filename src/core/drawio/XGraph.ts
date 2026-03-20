@@ -227,7 +227,10 @@ export class XGraph {
         const codec = new mxCodec(xmlDoc);
         this._graph.model.clear();
         this._graph.view.scale = 1;
-        codec.decode(xmlDoc.documentElement, this._graph.getModel());
+        // .drawio files wrap the model in <mxfile><diagram><mxGraphModel>.
+        // mxCodec.decode() requires <mxGraphModel> as the root element.
+        const root = XGraph._extractGraphModel(xmlDoc);
+        codec.decode(root, this._graph.getModel());
         this._initFonts();
         this._graph.updateCssTransform?.();
         this._graph.selectUnlockedLayer?.();
@@ -238,6 +241,30 @@ export class XGraph {
     } finally {
       this._graph.getModel().endUpdate();
     }
+  }
+
+  /**
+   * .drawio / mxfile format nests the model inside:
+   *   <mxfile> → <diagram> → <mxGraphModel>   (uncompressed)
+   *   <mxfile> → <diagram textContent=base64>  (compressed — already decoded by DrawioEngine)
+   * If the document root is already <mxGraphModel>, return it as-is.
+   */
+  private static _extractGraphModel(xmlDoc: Document): Element {
+    const root = xmlDoc.documentElement;
+    if (root.nodeName === 'mxGraphModel') {
+      return root;
+    }
+    if (root.nodeName === 'mxfile') {
+      const diagram = root.getElementsByTagName('diagram')[0];
+      if (diagram) {
+        const model = diagram.getElementsByTagName('mxGraphModel')[0];
+        if (model) {
+          return model;
+        }
+      }
+    }
+    // Fallback — let mxCodec try with whatever we have
+    return root;
   }
 
   private _initXCells(): void {

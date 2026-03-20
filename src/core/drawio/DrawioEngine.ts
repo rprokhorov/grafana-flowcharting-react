@@ -114,8 +114,17 @@ export class DrawioEngine {
 
   static isEncoded(data: string): boolean {
     try {
-      DrawioEngine.decode(data);
-      return true;
+      const node = DrawioEngine._parseXml(data).documentElement;
+      if (node?.nodeName === 'mxfile') {
+        const diagrams = node.getElementsByTagName('diagram');
+        if (diagrams.length > 0) {
+          const content = diagrams[0].textContent?.trim() ?? '';
+          // If the diagram tag contains child elements it's uncompressed XML,
+          // not a base64-encoded string
+          return diagrams[0].children.length === 0 && content.length > 0;
+        }
+      }
+      return false;
     } catch {
       return false;
     }
