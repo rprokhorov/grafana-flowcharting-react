@@ -175,7 +175,10 @@ export class DrawioEngine {
     g.BASE_PATH = basePath;
     g.RESOURCES_PATH = basePath + 'resources/';
     g.RESOURCE_BASE = basePath + 'resources/';
-    g.STENCIL_PATH = basePath + 'stencils/';
+    // Stencils (kubernetes, aws, azure, etc.) are loaded lazily from the
+    // official draw.io CDN. We do NOT bundle them (69MB) — fetching on demand
+    // is the same approach used by viewer.diagrams.net itself.
+    g.STENCIL_PATH = 'https://stencils.drawio.com';
     g.SHAPES_PATH = basePath + 'shapes/';
     g.IMAGE_PATH = basePath + 'images/';
     g.STYLE_PATH = basePath + 'styles/';
