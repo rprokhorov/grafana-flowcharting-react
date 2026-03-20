@@ -1,10 +1,9 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import type { TFlowchartData } from '../types';
 import type { MetricProcessor } from '../core/metrics/MetricProcessor';
 import type { RuleEngine, CellRuleState } from '../core/rules/RuleEngine';
 import type { TooltipState } from '../store/panelStore';
 import { XGraph } from '../core/drawio/XGraph';
-import { StatusOverlay } from './StatusOverlay';
 import '../styles/panel.css';
 
 interface FlowChartRendererProps {
@@ -32,7 +31,6 @@ export const FlowChartRenderer: React.FC<FlowChartRendererProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const xgraphRef = useRef<XGraph | null>(null);
-  const [renderError, setRenderError] = useState<string | null>(null);
   // Persists the last stateMap between renders so hover can look up cell state
   const cellStateMapRef = useRef<Map<string, CellRuleState>>(new Map());
   // Keep latest metrics/ruleEngine accessible inside hover callback without re-binding
@@ -85,31 +83,23 @@ export const FlowChartRenderer: React.FC<FlowChartRendererProps> = ({
       return;
     }
 
-    setRenderError(null);
-
-    let xgraph: XGraph;
-    try {
-      xgraph = new XGraph(containerRef.current, flowchart.type, source, {
-        zoom: flowchart.zoom,
-        center: flowchart.center,
-        scale: flowchart.scale,
-        lock: flowchart.lock,
-        enableAnim: flowchart.enableAnim,
-        tooltip: flowchart.tooltip,
-        grid: flowchart.grid,
-        bgColor: flowchart.bgColor,
-      });
-    } catch (e: any) {
-      setRenderError(e?.message ?? String(e));
-      return;
-    }
+    const xgraph = new XGraph(containerRef.current, flowchart.type, source, {
+      zoom: flowchart.zoom,
+      center: flowchart.center,
+      scale: flowchart.scale,
+      lock: flowchart.lock,
+      enableAnim: flowchart.enableAnim,
+      tooltip: flowchart.tooltip,
+      grid: flowchart.grid,
+      bgColor: flowchart.bgColor,
+    });
 
     xgraph.setHoverCallbacks(handleCellHover, handleCellHoverEnd);
     xgraphRef.current = xgraph;
 
     xgraph.initGraph()
       .then(() => applyRules(xgraph))
-      .catch((e: any) => setRenderError(e?.message ?? String(e)));
+      .catch((e: any) => console.warn('[FlowChartRenderer] initGraph warning:', e));
 
     return () => {
       xgraph.free();
@@ -163,9 +153,10 @@ export const FlowChartRenderer: React.FC<FlowChartRendererProps> = ({
     : {};
 
   return (
-    <div className="fc-diagram-container" style={bgStyle}>
-      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
-      {renderError && <StatusOverlay error={renderError} />}
-    </div>
+    <div
+      ref={containerRef}
+      className="fc-diagram-container"
+      style={bgStyle}
+    />
   );
 };
