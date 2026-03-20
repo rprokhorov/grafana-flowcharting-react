@@ -1,0 +1,22 @@
+{
+  "type": "panel",
+  "name": "FlowCharting React",
+  "id": "flowcharting-react-panel",
+  "info": {
+    "description": "FlowCharting React panel — render and monitor draw.io diagrams with Grafana 10+ metrics",
+    "author": {
+      "name": "FlowCharting Contributors"
+    },
+    "keywords": ["flowchart", "panel", "diagram", "draw.io", "mxgraph"],
+    "version": "1.0.0",
+    "updated": "2026-03-20",
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    }
+  },
+  "dependencies": {
+    "grafanaVersion": "10.0.0",
+    "plugins": []
+  }
+}

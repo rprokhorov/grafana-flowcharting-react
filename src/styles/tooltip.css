@@ -1,0 +1,28 @@
+.fc-tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: #1e2028;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 8px 12px;
+  pointer-events: none;
+  min-width: 120px;
+  max-width: 300px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.fc-tooltip-header {
+  font-size: 11px;
+  color: #aaa;
+  margin-bottom: 4px;
+}
+
+.fc-tooltip-value {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.fc-tooltip-sparkline {
+  margin-top: 6px;
+}

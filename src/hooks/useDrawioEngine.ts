@@ -1,0 +1,36 @@
+import { useState, useEffect } from 'react';
+import { config } from '@grafana/runtime';
+import { DrawioEngine } from '../core/drawio/DrawioEngine';
+
+/**
+ * Initializes the draw.io engine (viewer-static.min.js) once.
+ * Returns `ready = true` when the engine is loaded and eval'd.
+ *
+ * Guards against React StrictMode double-invoke via DrawioEngine.isInitialized().
+ */
+export function useDrawioEngine(): boolean {
+  const [ready, setReady] = useState(() => DrawioEngine.isInitialized());
+
+  useEffect(() => {
+    if (DrawioEngine.isInitialized()) {
+      setReady(true);
+      return;
+    }
+
+    // Derive baseUrl from Grafana plugin config or fall back to relative path
+    const panels = (config as any).panels ?? {};
+    const panelCfg = panels['flowcharting-react-panel'];
+    const baseUrl: string =
+      panelCfg?.baseUrl ??
+      (config as any).appSubUrl ??
+      '';
+
+    DrawioEngine.init(baseUrl)
+      .then(() => setReady(true))
+      .catch((err) => {
+        console.error('[useDrawioEngine] Failed to initialize draw.io engine', err);
+      });
+  }, []);
+
+  return ready;
+}

@@ -1,0 +1,94 @@
+{
+  "type": "agenty-flowcharting-panel",
+  "title": "FlowCharting Panel",
+  "flowchartsData": {
+    "editorUrl": "https://embed.diagrams.net",
+    "editorTheme": "kennedy",
+    "allowDrawio": true,
+    "flowcharts": [
+      {
+        "name": "Main",
+        "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"Server\" style=\"rounded=1;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"100\" y=\"100\" width=\"120\" height=\"60\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+        "csv": "",
+        "download": false,
+        "type": "xml",
+        "url": "",
+        "zoom": "100%",
+        "center": true,
+        "scale": true,
+        "lock": true,
+        "enableAnim": true,
+        "tooltip": true,
+        "grid": false,
+        "bgColor": null
+      }
+    ]
+  },
+  "rulesData": {
+    "rulesData": [
+      {
+        "order": 0,
+        "pattern": "/Server.*/",
+        "metricType": "serie",
+        "alias": "Server CPU",
+        "refId": "A",
+        "column": "Value",
+        "aggregation": "current",
+        "unit": "percent",
+        "type": "number",
+        "hidden": false,
+        "decimals": 2,
+        "reduce": true,
+        "dateColumn": "",
+        "dateFormat": "YYYY-MM-DD HH:mm:ss",
+        "invert": false,
+        "gradient": false,
+        "overlayIcon": false,
+        "tooltip": true,
+        "tooltipLabel": "CPU: _formated",
+        "tooltipColors": true,
+        "tooltipOn": "wc",
+        "tpDirection": "v",
+        "tpMetadata": false,
+        "tpGraph": true,
+        "tpGraphSize": "100%",
+        "tpGraphType": "line",
+        "tpGraphLow": null,
+        "tpGraphHigh": null,
+        "tpGraphScale": "linear",
+        "mapsDat": {
+          "shapes": {
+            "options": { "identByProp": "id", "metadata": "", "enableRegEx": true },
+            "dataList": [
+              { "pattern": "2", "hidden": false, "style": "fillColor", "colorOn": "wc" }
+            ]
+          },
+          "texts": {
+            "options": { "identByProp": "id", "metadata": "", "enableRegEx": true },
+            "dataList": []
+          },
+          "links": {
+            "options": { "identByProp": "id", "metadata": "", "enableRegEx": true },
+            "dataList": []
+          },
+          "events": {
+            "options": { "identByProp": "id", "metadata": "", "enableRegEx": true },
+            "dataList": []
+          }
+        },
+        "numberTHData": [
+          { "level": 0, "value": 0, "color": "#73BF69", "comparator": "ge" },
+          { "level": 1, "value": 50, "color": "#FADE2A", "comparator": "ge" },
+          { "level": 2, "value": 80, "color": "#F2495C", "comparator": "ge" }
+        ],
+        "stringTHData": [],
+        "dateTHData": [],
+        "mappingType": 1,
+        "valueData": [],
+        "rangeData": [],
+        "sanitize": false,
+        "newRule": false
+      }
+    ]
+  }
+}
