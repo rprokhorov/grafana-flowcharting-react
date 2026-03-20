@@ -262,6 +262,12 @@ export class MetricProcessor {
     return this._metrics.get(name)?.getDataPoints(column) ?? [];
   }
 
+  /** Like getDataPoints but resolves via pattern matching (same as matchMetrics). */
+  getDataPointsByPattern(pattern: string, column?: string): DataPoint[] {
+    const matched = this.matchMetrics(pattern);
+    return matched.length > 0 ? matched[0].getDataPoints(column) : [];
+  }
+
   matchMetrics(pattern: string): IMetric[] {
     const result: IMetric[] = [];
     try {

@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import type { TFlowchartData } from '../types';
 import type { MetricProcessor } from '../core/metrics/MetricProcessor';
-import type { RuleEngine } from '../core/rules/RuleEngine';
+import type { RuleEngine, CellRuleState } from '../core/rules/RuleEngine';
 import type { TooltipState } from '../store/panelStore';
 import { XGraph } from '../core/drawio/XGraph';
 import '../styles/panel.css';
@@ -31,24 +31,42 @@ export const FlowChartRenderer: React.FC<FlowChartRendererProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const xgraphRef = useRef<XGraph | null>(null);
+  // Persists the last stateMap between renders so hover can look up cell state
+  const cellStateMapRef = useRef<Map<string, CellRuleState>>(new Map());
+  // Keep latest metrics/ruleEngine accessible inside hover callback without re-binding
+  const metricsRef = useRef(metrics);
+  const ruleEngineRef = useRef(ruleEngine);
+  useEffect(() => { metricsRef.current = metrics; }, [metrics]);
+  useEffect(() => { ruleEngineRef.current = ruleEngine; }, [ruleEngine]);
 
   const handleCellHover = useCallback(
     (cellId: string, x: number, y: number) => {
-      const states = metrics.getMetricNames();
-      // Find state for this cell from rule engine results
-      // We pass a simplified tooltip here; full state is computed in FlowChartingPanel
+      const state = cellStateMapRef.current.get(cellId);
+      if (!state) {
+        // Cell has no rule applied — show plain cell id
+        onTooltip({ cellId, x, y, level: 0, color: '#aaa', formattedValue: cellId, dataPoints: [], label: cellId });
+        return;
+      }
+
+      // Find which rule matched this cell and get its metric pattern for sparkline
+      const rule = ruleEngineRef.current.getRules().find((r) =>
+        r.data.mapsDat.shapes.dataList.some((m) => m.pattern === cellId || cellId.match(new RegExp(m.pattern))) ||
+        r.data.mapsDat.texts.dataList.some((m) => m.pattern === cellId || cellId.match(new RegExp(m.pattern)))
+      );
+      const dataPoints = rule ? metricsRef.current.getDataPointsByPattern(rule.data.pattern) : [];
+
       onTooltip({
         cellId,
         x,
         y,
-        level: 0,
-        color: '#73BF69',
-        formattedValue: '',
-        dataPoints: [],
-        label: cellId,
+        level: state.level,
+        color: state.color,
+        formattedValue: state.formattedValue,
+        dataPoints,
+        label: state.ruleAlias || cellId,
       });
     },
-    [metrics, onTooltip]
+    [onTooltip]
   );
 
   const handleCellHoverEnd = useCallback(() => {
@@ -126,7 +144,8 @@ export const FlowChartRenderer: React.FC<FlowChartRendererProps> = ({
 
   function applyRules(xgraph: XGraph) {
     const xcells = xgraph.getXCells();
-    ruleEngine.applyAll(metrics, xgraph, xcells);
+    const stateMap = ruleEngineRef.current.applyAll(metricsRef.current, xgraph, xcells);
+    cellStateMapRef.current = stateMap;
     xgraph.refresh();
   }
 
