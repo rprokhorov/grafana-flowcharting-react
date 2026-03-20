@@ -24,7 +24,7 @@ export const FlowChartingPanel: React.FC<Props> = ({ data, options, width, heigh
   const flowchartsData = options?.flowchartsData ?? DEFAULTS.flowchartsData;
 
   const engineReady = useDrawioEngine();
-  const metrics = useMetrics(data);
+  const { metrics, metricsRevision } = useMetrics(data);
   const { ruleEngine, rulesRevision } = useRuleEngine(rulesData);
   const { activeFlowchart, activeIndex, total, goNext, goPrev } = useFlowchartManager(flowchartsData);
 
@@ -59,6 +59,7 @@ export const FlowChartingPanel: React.FC<Props> = ({ data, options, width, heigh
           flowchart={activeFlowchart.data}
           engineReady={engineReady}
           metrics={metrics}
+          metricsRevision={metricsRevision}
           ruleEngine={ruleEngine}
           rulesRevision={rulesRevision}
           onTooltip={handleTooltip}

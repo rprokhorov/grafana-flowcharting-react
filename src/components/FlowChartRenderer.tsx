@@ -10,6 +10,7 @@ interface FlowChartRendererProps {
   flowchart: TFlowchartData;
   engineReady: boolean;
   metrics: MetricProcessor;
+  metricsRevision: number;
   ruleEngine: RuleEngine;
   rulesRevision: number;
   onTooltip: (tooltip: TooltipState | null) => void;
@@ -23,6 +24,7 @@ export const FlowChartRenderer: React.FC<FlowChartRendererProps> = ({
   flowchart,
   engineReady,
   metrics,
+  metricsRevision,
   ruleEngine,
   rulesRevision,
   onTooltip,
@@ -96,7 +98,7 @@ export const FlowChartRenderer: React.FC<FlowChartRendererProps> = ({
       applyRules(xgraphRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [metrics, rulesRevision]);
+  }, [metricsRevision, rulesRevision]);
 
   // Update display options without remounting
   useEffect(() => {
