@@ -175,10 +175,11 @@ export class DrawioEngine {
     g.BASE_PATH = basePath;
     g.RESOURCES_PATH = basePath + 'resources/';
     g.RESOURCE_BASE = basePath + 'resources/';
-    // Stencils (kubernetes, aws, azure, etc.) are loaded lazily from the
-    // official draw.io CDN. We do NOT bundle them (69MB) — fetching on demand
-    // is the same approach used by viewer.diagrams.net itself.
-    g.STENCIL_PATH = 'https://stencils.drawio.com';
+    // Stencils are served from the plugin's own static directory (bundled at
+    // build time via CopyPlugin). If a stencil is missing locally (404), the
+    // loader falls back to the official draw.io CDN automatically — see
+    // _patchStencilLoader() called after eval.
+    g.STENCIL_PATH = basePath + 'stencils';
     g.SHAPES_PATH = basePath + 'shapes/';
     g.IMAGE_PATH = basePath + 'images/';
     g.STYLE_PATH = basePath + 'styles/';
@@ -204,7 +205,7 @@ export class DrawioEngine {
     g.mxLoadResources = true;
   }
 
-  private static async _evalLib(code: string, baseUrl: string) {
+  private static async _evalLib(code: string, _baseUrl: string) {
     // NOTE: eval() is required — viewer-static.min.js is not an ES module.
     // Installations with strict CSP may block this (known limitation).
     globalThis.eval(code);
@@ -213,6 +214,50 @@ export class DrawioEngine {
     if (typeof mxTooltipHandler !== 'undefined') {
       mxTooltipHandler.prototype.delay = GFCONSTANT.CONF_TOOLTIPS_DELAY;
     }
+
+    DrawioEngine._patchStencilLoader();
+  }
+
+  /**
+   * Patches mxStencilRegistry.loadStencil so that when a local stencil fetch
+   * returns 404 (file not bundled), the request is automatically retried
+   * against the official draw.io CDN (https://stencils.drawio.com).
+   *
+   * This gives offline-first behaviour: bundled stencils are served locally
+   * with zero latency; exotic/new stencils fall back to the CDN transparently.
+   */
+  private static _patchStencilLoader() {
+    const g = globalThis as any;
+    const registry = g.mxStencilRegistry;
+    if (!registry || !registry.loadStencil) {
+      return;
+    }
+
+    const CDN = 'https://stencils.drawio.com';
+    const localPrefix: string = g.STENCIL_PATH ?? '';
+    const original: (url: string, cb: (doc: Document | null) => void) => void =
+      registry.loadStencil.bind(registry);
+
+    registry.loadStencil = function (url: string, cb: (doc: Document | null) => void) {
+      // Only intercept local stencil requests
+      if (!url.startsWith(localPrefix)) {
+        original(url, cb);
+        return;
+      }
+
+      // Try local first; on failure (null doc or fetch error) try CDN
+      original(url, (doc: Document | null) => {
+        if (doc != null) {
+          cb(doc);
+          return;
+        }
+        // Local stencil missing — derive CDN URL by replacing the local prefix
+        const relative = url.slice(localPrefix.length).replace(/^\/+/, '');
+        const cdnUrl = `${CDN}/${relative}`;
+        console.warn(`[DrawioEngine] Stencil not found locally, trying CDN: ${cdnUrl}`);
+        original(cdnUrl, cb);
+      });
+    };
   }
 
   private static async _postLoad() {

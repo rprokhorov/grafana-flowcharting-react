@@ -1,4 +1,5 @@
 const path = require('path');
+const CopyPlugin = require('copy-webpack-plugin');
 
 // Grafana 10 loads plugins via SystemJS — module must be UMD/commonjs
 // and all @grafana/* / react / react-dom must be treated as externals
@@ -44,6 +45,14 @@ module.exports = {
       },
     ],
   },
+  plugins: [
+    new CopyPlugin({
+      patterns: [
+        // Copy draw.io viewer library and all stencils into dist/static/libs/
+        { from: 'src/static', to: 'static' },
+      ],
+    }),
+  ],
   optimization: {
     minimize: false, // Easier to debug; set true for prod
   },
