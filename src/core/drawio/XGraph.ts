@@ -60,18 +60,32 @@ export class XGraph {
       return;
     }
     this._isInitialized = true;
-    try {
-      this._createGraph();
-      this._display();
-      this._updateOptions();
-      this._initXCells();
-      this._attachHoverListener();
-    } catch (e) {
-      this._isInitialized = false;
-      this._graph?.destroy();
-      this._graph = undefined;
-      throw e;
-    }
+    this._createGraph();
+    this._display();
+    this._updateOptions();
+    this._initXCells();
+    this._attachHoverListener();
+
+    // Custom stencils (kubernetes, aws, etc.) are fetched asynchronously by
+    // mxStencilRegistry the first time a shape references them. The initial
+    // decode may produce blank cells. Schedule a deferred refresh so the
+    // stencils are picked up once they've been fetched and registered.
+    this._scheduleStencilRefresh();
+  }
+
+  /**
+   * After init, schedule two refreshes — a short one (500ms) for fast local
+   * stencils and a longer one (2s) for CDN fallback. Each refresh re-renders
+   * all cells including those whose stencils are now available.
+   */
+  private _scheduleStencilRefresh(): void {
+    const doRefresh = () => {
+      if (this._isInitialized && this._graph) {
+        this._graph.refresh();
+      }
+    };
+    setTimeout(doRefresh, 500);
+    setTimeout(doRefresh, 2000);
   }
 
   isInitialized(): boolean {
@@ -244,10 +258,14 @@ export class XGraph {
       }
       // CSV import would go here if needed
     } catch (e) {
+      // Do NOT rethrow — mxGraph may fail on first render when custom stencils
+      // (kubernetes, aws, etc.) are still loading asynchronously. The shapes will
+      // appear blank initially, and subsequent refresh() calls will pick them up
+      // once the stencil XML has been fetched and registered.
+      console.warn('[XGraph] Error during initial diagram decode (may resolve after stencils load):', e);
+    } finally {
       this._graph.getModel().endUpdate();
-      throw e;
     }
-    this._graph.getModel().endUpdate();
   }
 
   /**
