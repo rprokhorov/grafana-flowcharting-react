@@ -355,7 +355,10 @@ export class XGraph {
       mouseMove: (_sender: any, evt: mxMouseEvent) => {
         const cell = evt.getCell?.();
         if (cell) {
-          this._onCellHover?.(cell.id, evt.graphX ?? 0, evt.graphY ?? 0);
+          const nativeEvt = evt.getEvent?.() as MouseEvent | undefined;
+          const x = nativeEvt?.clientX ?? 0;
+          const y = nativeEvt?.clientY ?? 0;
+          this._onCellHover?.(cell.id, x, y);
         } else {
           this._onCellHoverEnd?.();
         }

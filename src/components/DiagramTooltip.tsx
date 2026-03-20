@@ -8,14 +8,19 @@ interface DiagramTooltipProps {
   tooltip: TooltipState;
 }
 
+const TOOLTIP_WIDTH = 220;
+const TOOLTIP_HEIGHT = 110; // approximate, with sparkline
+
 export const DiagramTooltip: React.FC<DiagramTooltipProps> = ({ tooltip }) => {
   const { x, y, color, formattedValue, label, dataPoints } = tooltip;
   const hasSparkline = dataPoints.length > 1;
 
-  const style: React.CSSProperties = {
-    left: x + 16,
-    top: y + 16,
-  };
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const left = x + 16 + TOOLTIP_WIDTH > vw ? x - TOOLTIP_WIDTH - 8 : x + 16;
+  const top  = y + 16 + TOOLTIP_HEIGHT > vh ? y - TOOLTIP_HEIGHT - 8 : y + 16;
+
+  const style: React.CSSProperties = { left, top };
 
   return (
     <Portal>
