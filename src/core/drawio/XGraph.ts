@@ -264,6 +264,16 @@ export class XGraph {
     this.container.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
+  /**
+   * Rewrites relative image paths (e.g. "img/lib/azure2/...") to absolute
+   * draw.io CDN URLs so they render correctly outside diagrams.net.
+   */
+  private static _rewriteImagePaths(xml: string): string {
+    const DRAWIO_CDN = 'https://viewer.diagrams.net/';
+    // Match image=img/lib/... or image=img/... in style strings (unquoted values in XML attributes)
+    return xml.replace(/image=img\//g, `image=${DRAWIO_CDN}img/`);
+  }
+
   private _display(): void {
     if (!this._graph) {
       return;
@@ -272,7 +282,7 @@ export class XGraph {
     this._graph.getModel().clear();
     try {
       if (this._type === 'xml') {
-        const xmlDoc = mxUtils.parseXml(this._xmlGraph);
+        const xmlDoc = mxUtils.parseXml(XGraph._rewriteImagePaths(this._xmlGraph));
         const codec = new mxCodec(xmlDoc);
         this._graph.model.clear();
         this._graph.view.scale = 1;

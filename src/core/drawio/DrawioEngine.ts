@@ -182,6 +182,7 @@ export class DrawioEngine {
     g.STENCIL_PATH = basePath + 'stencils';
     g.SHAPES_PATH = basePath + 'shapes/';
     g.IMAGE_PATH = basePath + 'images/';
+    g.GRAPH_IMAGE_PATH = 'https://viewer.diagrams.net/img';
     g.STYLE_PATH = basePath + 'styles/';
     g.CSS_PATH = basePath + 'css/';
     g.mxLanguages = ['en'];
@@ -216,6 +217,7 @@ export class DrawioEngine {
     }
 
     DrawioEngine._patchStencilLoader();
+    DrawioEngine._patchDrawShape();
   }
 
   /**
@@ -235,28 +237,83 @@ export class DrawioEngine {
 
     const CDN = 'https://stencils.drawio.com';
     const localPrefix: string = g.STENCIL_PATH ?? '';
-    const original: (url: string, cb: (doc: Document | null) => void) => void =
-      registry.loadStencil.bind(registry);
+    const originalLoadStencil = registry.loadStencil.bind(registry);
 
-    registry.loadStencil = function (url: string, cb: (doc: Document | null) => void) {
-      // Only intercept local stencil requests
+    // loadStencil is called in two modes:
+    // 1. Synchronous: loadStencil(url) — returns XML Document directly
+    // 2. Async: loadStencil(url, callback) — calls callback(doc)
+    // We must handle both and fall back to CDN when local returns null/error.
+    registry.loadStencil = function (url: string, cb?: (doc: Document | null) => void) {
       if (!url.startsWith(localPrefix)) {
-        original(url, cb);
-        return;
+        // Not a local URL — pass through unchanged
+        return cb ? originalLoadStencil(url, cb) : originalLoadStencil(url);
       }
 
-      // Try local first; on failure (null doc or fetch error) try CDN
-      original(url, (doc: Document | null) => {
-        if (doc != null) {
-          cb(doc);
-          return;
+      const relative = url.slice(localPrefix.length).replace(/^\/+/, '');
+      const cdnUrl = `${CDN}/${relative}`;
+
+      if (cb) {
+        // Async mode — try local, fall back to CDN
+        originalLoadStencil(url, (doc: Document | null) => {
+          if (doc != null) {
+            cb(doc);
+            return;
+          }
+          console.warn(`[DrawioEngine] Stencil not found locally, trying CDN: ${cdnUrl}`);
+          originalLoadStencil(cdnUrl, cb);
+        });
+      } else {
+        // Synchronous mode — try local, fall back to CDN
+        try {
+          const doc = originalLoadStencil(url);
+          if (doc != null) {
+            return doc;
+          }
+        } catch {
+          // local fetch failed — fall through to CDN
         }
-        // Local stencil missing — derive CDN URL by replacing the local prefix
-        const relative = url.slice(localPrefix.length).replace(/^\/+/, '');
-        const cdnUrl = `${CDN}/${relative}`;
         console.warn(`[DrawioEngine] Stencil not found locally, trying CDN: ${cdnUrl}`);
-        original(cdnUrl, cb);
-      });
+        try {
+          return originalLoadStencil(cdnUrl);
+        } catch {
+          return null;
+        }
+      }
+    };
+  }
+
+  /**
+   * Wraps mxShape.prototype.paint so that if a stencil's drawShape is missing
+   * (stencil XML not yet loaded), the shape silently renders as a blank
+   * rectangle instead of crashing with "Cannot read properties of undefined
+   * (reading 'drawShape')".
+   */
+  private static _patchDrawShape() {
+    const g = globalThis as any;
+    const mxShapeProto = g.mxShape?.prototype;
+    if (!mxShapeProto || !mxShapeProto.paint) {
+      return;
+    }
+    const originalPaint = mxShapeProto.paint;
+    mxShapeProto.paint = function (this: any, c: any) {
+      try {
+        originalPaint.call(this, c);
+      } catch (e: any) {
+        // Silently ignore drawShape errors from missing stencils.
+        // The deferred refresh in XGraph will re-paint once stencils load.
+        if (e?.message?.includes('drawShape') || e?.message?.includes('undefined')) {
+          // Draw a placeholder rectangle so the cell is visible
+          try {
+            if (this.bounds) {
+              c.begin();
+              c.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+              c.fillAndStroke();
+            }
+          } catch { /* ignore */ }
+        } else {
+          throw e;
+        }
+      }
     };
   }
 
