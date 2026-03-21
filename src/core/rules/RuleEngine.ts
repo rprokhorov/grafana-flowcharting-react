@@ -6,13 +6,25 @@ import type { XCell } from '../drawio/XCell';
 import type { XGraph } from '../drawio/XGraph';
 import { Rule } from './Rule';
 
-export interface CellRuleState {
-  cellId: string;
+export interface CellRuleMatch {
   level: number;
   color: string;
   formattedValue: string;
   rawValue: string | number | null;
   ruleAlias: string;
+  metricPattern: string;
+}
+
+export interface CellRuleState {
+  cellId: string;
+  /** Highest-level match (used for visual styling) */
+  level: number;
+  color: string;
+  formattedValue: string;
+  rawValue: string | number | null;
+  ruleAlias: string;
+  /** All rules that matched this cell (for multi-series tooltip) */
+  allMatches: CellRuleMatch[];
 }
 
 export class RuleEngine {
@@ -81,10 +93,19 @@ export class RuleEngine {
       // Apply maps
       rule.applyMapsToXCells(xgraph, xcells, result);
 
-      // Update state map with highest-level wins semantics
+      // Update state map — collect all matches, keep highest-level for styling
+      const match: CellRuleMatch = {
+        level: result.level,
+        color: result.color,
+        formattedValue: result.formattedValue,
+        rawValue: result.rawValue,
+        ruleAlias: rule.data.alias,
+        metricPattern: rule.data.pattern,
+      };
+
       for (const xcell of affectedCells) {
         const existing = stateMap.get(xcell.getId());
-        if (!existing || result.level > existing.level) {
+        if (!existing) {
           stateMap.set(xcell.getId(), {
             cellId: xcell.getId(),
             level: result.level,
@@ -92,7 +113,17 @@ export class RuleEngine {
             formattedValue: result.formattedValue,
             rawValue: result.rawValue,
             ruleAlias: rule.data.alias,
+            allMatches: [match],
           });
+        } else {
+          existing.allMatches.push(match);
+          if (result.level > existing.level) {
+            existing.level = result.level;
+            existing.color = result.color;
+            existing.formattedValue = result.formattedValue;
+            existing.rawValue = result.rawValue;
+            existing.ruleAlias = rule.data.alias;
+          }
         }
       }
     }

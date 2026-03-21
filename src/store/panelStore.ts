@@ -6,6 +6,13 @@ import { create } from 'zustand';
 import type { CellRuleState } from '../core/rules/RuleEngine';
 import type { DataPoint } from '../core/metrics/MetricProcessor';
 
+export interface TooltipSeries {
+  label: string;
+  color: string;
+  formattedValue: string;
+  dataPoints: DataPoint[];
+}
+
 export interface TooltipState {
   cellId: string;
   x: number;
@@ -15,6 +22,8 @@ export interface TooltipState {
   formattedValue: string;
   dataPoints: DataPoint[];
   label: string;
+  /** Multiple series when several rules match the same cell */
+  series: TooltipSeries[];
 }
 
 export interface PanelStoreState {

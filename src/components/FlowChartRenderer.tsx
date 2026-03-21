@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import type { TFlowchartData } from '../types';
 import type { MetricProcessor } from '../core/metrics/MetricProcessor';
 import type { RuleEngine, CellRuleState } from '../core/rules/RuleEngine';
-import type { TooltipState } from '../store/panelStore';
+import type { TooltipState, TooltipSeries } from '../store/panelStore';
 import { XGraph } from '../core/drawio/XGraph';
 import '../styles/panel.css';
 
@@ -44,16 +44,23 @@ export const FlowChartRenderer: React.FC<FlowChartRendererProps> = ({
       const state = cellStateMapRef.current.get(cellId);
       if (!state) {
         // Cell has no rule applied — show plain cell id
-        onTooltip({ cellId, x, y, level: 0, color: '#aaa', formattedValue: cellId, dataPoints: [], label: cellId });
+        onTooltip({ cellId, x, y, level: 0, color: '#aaa', formattedValue: cellId, dataPoints: [], label: cellId, series: [] });
         return;
       }
 
-      // Find which rule matched this cell and get its metric pattern for sparkline
-      const rule = ruleEngineRef.current.getRules().find((r) =>
-        r.data.mapsDat.shapes.dataList.some((m) => m.pattern === cellId || cellId.match(new RegExp(m.pattern))) ||
-        r.data.mapsDat.texts.dataList.some((m) => m.pattern === cellId || cellId.match(new RegExp(m.pattern)))
-      );
-      const dataPoints = rule ? metricsRef.current.getDataPointsByPattern(rule.data.pattern) : [];
+      // Build a series entry for every rule that matched this cell
+      const series: TooltipSeries[] = (state.allMatches ?? []).map((m) => {
+        const dp = metricsRef.current.getDataPointsByPattern(m.metricPattern);
+        return {
+          label: m.ruleAlias || m.metricPattern,
+          color: m.color,
+          formattedValue: m.formattedValue,
+          dataPoints: dp,
+        };
+      });
+
+      // First series dataPoints used as legacy fallback
+      const dataPoints = series.length > 0 ? series[0].dataPoints : [];
 
       onTooltip({
         cellId,
@@ -64,6 +71,7 @@ export const FlowChartRenderer: React.FC<FlowChartRendererProps> = ({
         formattedValue: state.formattedValue,
         dataPoints,
         label: state.ruleAlias || cellId,
+        series,
       });
     },
     [onTooltip]
