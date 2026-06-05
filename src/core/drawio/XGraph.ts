@@ -42,6 +42,8 @@ export class XGraph {
   private _onCellHoverEnd?: CellHoverEndCallback;
   private _keydownHandler?: (evt: KeyboardEvent) => void;
   private _contextMenuHandler?: (evt: Event) => void;
+  /** Pending setTimeout ids (stencil refresh, animations) cleared on free(). */
+  private _timers = new Set<ReturnType<typeof setTimeout>>();
 
   constructor(container: HTMLDivElement, type: TSourceTypeKeys, definition: string, options?: XGraphOptions) {
     this.container = container;
@@ -114,16 +116,29 @@ export class XGraph {
         console.warn('[XGraph] deferred refresh error:', e);
       }
     };
-    setTimeout(doRefresh, 500);
-    setTimeout(doRefresh, 2000);
+    this._setTimeout(doRefresh, 500);
+    this._setTimeout(doRefresh, 2000);
   }
 
   isInitialized(): boolean {
     return this._isInitialized;
   }
 
+  /** Schedule a timeout whose id is tracked so free() can cancel it. */
+  private _setTimeout(fn: () => void, ms: number): void {
+    const id = setTimeout(() => {
+      this._timers.delete(id);
+      fn();
+    }, ms);
+    this._timers.add(id);
+  }
+
   /** Destroy graph — call in React cleanup / useEffect return. */
   free(): void {
+    for (const id of this._timers) {
+      clearTimeout(id);
+    }
+    this._timers.clear();
     if (this._keydownHandler) {
       document.removeEventListener('keydown', this._keydownHandler);
       this._keydownHandler = undefined;
@@ -191,7 +206,7 @@ export class XGraph {
           const steps = chroma.scale([startColor, color]).mode('lrgb').colors(GFCONSTANT.CONF_COLORS_STEPS + 1);
           const ms = GFCONSTANT.CONF_COLORS_MS;
           for (let i = 1; i < steps.length; i++) {
-            setTimeout(() => xcell.setStyle(style, steps[i]), ms * i);
+            this._setTimeout(() => xcell.setStyle(style, steps[i]), ms * i);
           }
           return;
         }
@@ -217,7 +232,7 @@ export class XGraph {
         const steps = XGraph._interpolate(begin, end, GFCONSTANT.CONF_ANIMS_STEP);
         const ms = GFCONSTANT.CONF_ANIMS_MS;
         for (let i = 1; i < steps.length; i++) {
-          setTimeout(() => xcell.setStyle(style as any, steps[i].toString()), ms * i);
+          this._setTimeout(() => xcell.setStyle(style as any, steps[i].toString()), ms * i);
         }
         return;
       }
