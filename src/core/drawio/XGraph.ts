@@ -35,6 +35,7 @@ export class XGraph {
   private _center = true;
   private _animation = true;
   private _grid = false;
+  private _bgColor: string | null = null;
   private _zoomPercent = '100%';
   private _cumulativeZoomFactor = 1;
   xcells: XCell[] = [];
@@ -406,8 +407,9 @@ export class XGraph {
     this.container.style.backgroundImage = this._grid
       ? "url('data:image/gif;base64,R0lGODlhCgAKAJEAAAAAAP///8zMzP///yH5BAEAAAMALAAAAAAKAAoAAAIJ1I6py+0Po2wFADs=')"
       : '';
-    // Background color
-    this.container.style.backgroundColor = this._graph.background ?? '';
+    // Background color — the panel-configured bgColor takes precedence over the
+    // diagram's own mxGraph background.
+    this.container.style.backgroundColor = this._bgColor ?? this._graph.background ?? '';
     // Scale / center / zoom
     if (this._scale) {
       if (this._center) {
@@ -519,6 +521,9 @@ export class XGraph {
     }
     if (options.grid !== undefined) {
       this._grid = options.grid;
+    }
+    if (options.bgColor !== undefined) {
+      this._bgColor = options.bgColor;
     }
   }
 
