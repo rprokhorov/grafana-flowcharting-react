@@ -24,7 +24,7 @@ export const FlowChartingPanel: React.FC<Props> = ({ data, options, width, heigh
   const rulesData = options?.rulesData ?? DEFAULTS.rulesData;
   const flowchartsData = options?.flowchartsData ?? DEFAULTS.flowchartsData;
 
-  const engineReady = useDrawioEngine();
+  const { ready: engineReady, error: engineError } = useDrawioEngine();
   const { metrics, metricsRevision } = useMetrics(data);
   const { ruleEngine, rulesRevision } = useRuleEngine(rulesData);
   const { activeFlowchart, activeIndex, total, goNext, goPrev } = useFlowchartManager(flowchartsData);
@@ -45,7 +45,7 @@ export const FlowChartingPanel: React.FC<Props> = ({ data, options, width, heigh
 
   return (
     <div className={`fc-panel-wrapper${isPicking ? ' fc-picking' : ''}`} style={{ width, height }}>
-      <StatusOverlay loading={!engineReady} />
+      <StatusOverlay loading={!engineReady && !engineError} error={engineError ?? undefined} />
 
       {isPicking && (
         <div className="fc-pick-overlay" onClick={() => CellPickerService.cancel()}>
