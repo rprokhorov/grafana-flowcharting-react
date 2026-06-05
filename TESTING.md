@@ -184,7 +184,9 @@ adding or removing tests.
 ### End-to-end (Playwright)
 
 Human-readable test cases (steps + expected results, including ones not yet
-automated) live in [e2e/TEST-CASES.md](e2e/TEST-CASES.md).
+automated) live in [e2e/TEST-CASES.md](e2e/TEST-CASES.md) — grouped by
+functional area (panel lifecycle, diagram sources, display options, metrics,
+thresholds, maps, value mapping, tooltip, navigator, robustness).
 
 | Test plan | Spec | What it asserts |
 |---|---|---|
