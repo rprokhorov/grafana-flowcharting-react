@@ -440,15 +440,22 @@ export class XGraph {
     const margin = 2;
     const max = 3;
     const bounds = this._graph.getGraphBounds();
+    const viewScale = this._graph.view.scale || 1;
     const cw = this._graph.container.clientWidth - margin;
     const ch = this._graph.container.clientHeight - margin;
-    const w = bounds.width / this._graph.view.scale;
-    const h = bounds.height / this._graph.view.scale;
+    const w = bounds.width / viewScale;
+    const h = bounds.height / viewScale;
+    // Guard against an empty diagram or an unmeasured (zero-size) container —
+    // dividing by zero would feed NaN/Infinity into scaleAndTranslate.
+    if (w <= 0 || h <= 0 || cw <= 0 || ch <= 0) {
+      this._graph.zoomActual();
+      return;
+    }
     const s = Math.min(max, Math.min(cw / w, ch / h));
     this._graph.view.scaleAndTranslate(
       s,
-      (margin + cw - w * s) / (2 * s) - bounds.x / this._graph.view.scale,
-      (margin + ch - h * s) / (2 * s) - bounds.y / this._graph.view.scale
+      (margin + cw - w * s) / (2 * s) - bounds.x / viewScale,
+      (margin + ch - h * s) / (2 * s) - bounds.y / viewScale
     );
   }
 
@@ -462,19 +469,21 @@ export class XGraph {
     }
   }
 
-  private _zoomPointer(factor: number, offsetX: number, offsetY: number): void {
+  private _zoomPointer(_factor: number, offsetX: number, offsetY: number): void {
     let dx = offsetX * 2;
     let dy = offsetY * 2;
-    factor = Math.max(0.01, Math.min(this._graph.view.scale * factor, 160)) / this._graph.view.scale;
-    factor = this._cumulativeZoomFactor / this._graph.view.scale;
-    const scale = Math.round(this._graph.view.scale * factor * 100) / 100;
-    factor = scale / this._graph.view.scale;
+    const viewScale = this._graph.view.scale || 1;
+    // Target scale comes from the accumulated wheel factor, clamped to a sane
+    // range so the diagram can't be zoomed to nothing or to absurd magnification.
+    const target = Math.max(0.01, Math.min(this._cumulativeZoomFactor, 160));
+    const scale = Math.round(target * 100) / 100;
+    const factor = scale / viewScale;
     if (factor > 1) {
       const f = (factor - 1) / (scale * 2);
       dx *= -f;
       dy *= -f;
     } else {
-      const f = (1 / factor - 1) / (this._graph.view.scale * 2);
+      const f = (1 / factor - 1) / (viewScale * 2);
       dx *= f;
       dy *= f;
     }
