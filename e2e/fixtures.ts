@@ -19,3 +19,13 @@ export const TEST_DIAGRAM_FILE = 'тестовая схема.drawio';
 export function testDiagramXml(): string {
   return readFixture(TEST_DIAGRAM_FILE);
 }
+
+/** Threshold colors from GFCONSTANT.CONF_COLORS_DEFAULT (level 0/1/2). */
+export const THRESHOLD_COLORS = {
+  green: '#73BF69',
+  yellow: '#FADE2A',
+  red: '#F2495C',
+} as const;
+
+/** The ingress cell's original fill in the shared diagram XML. */
+export const ORIGINAL_FILL = '#2875E2';

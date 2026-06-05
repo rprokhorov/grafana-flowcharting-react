@@ -27,7 +27,7 @@ level 2 red `#F2495C`.
 | B | Diagram sources | B1–B5 |
 | C | Display options | C1–C7 |
 | D | Metrics & aggregation | D1–D5 |
-| E | Thresholds & coloring | E1–E7 |
+| E | Thresholds & coloring | E1–E7 (E1–E4 ✅) |
 | F | Shape / text / link / event maps | F1–F8 |
 | G | Value & range mapping | G1–G3 |
 | H | Tooltip | H1–H4 |
@@ -146,19 +146,19 @@ only the focused panel resets (regression guard for the listener-leak fix).
 
 ## E. Thresholds & coloring
 
-### E1 — Below first threshold keeps default color &nbsp;`⬜`
+### E1 — Below first threshold keeps default color &nbsp;`✅ thresholds.spec.ts`
 **Preconditions:** current value 10, thresholds 0/50/80, shape map `colorOn=wc`.
 **Expected:** No cell is yellow/red; the ingress cell keeps original `#2875E2`.
 
-### E2 — Level 1 (yellow) boundary &nbsp;`⬜`
+### E2 — Level 1 (yellow) boundary &nbsp;`✅ thresholds.spec.ts`
 **Preconditions:** current value 50.
 **Expected:** The cell is painted level-1 yellow `#FADE2A`.
 
-### E3 — Level 2 (red) boundary &nbsp;`⬜`
+### E3 — Level 2 (red) boundary &nbsp;`✅ thresholds.spec.ts`
 **Preconditions:** current value 80.
 **Expected:** The cell is painted level-2 red `#F2495C`.
 
-### E4 — Invert mirrors the severity but keeps the matched color &nbsp;`⬜`
+### E4 — Invert mirrors the severity but keeps the matched color &nbsp;`✅ thresholds.spec.ts`
 **Preconditions:** current value 90, `invert` on.
 **Expected:** The painted color is still the matched threshold's color (the cell
 is not recolored to the opposite end). Regression guard for the invert fix.

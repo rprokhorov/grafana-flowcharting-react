@@ -130,15 +130,19 @@ provisioning/
 ├── datasources/testdata.yaml      # TestData datasource (uid: testdata)
 └── dashboards/
     ├── dashboards.yaml            # file provider
-    └── rule-color.json            # generated — panel + rule + csv data
+    ├── fc-rule-color.json         # generated — current 90 → red
+    ├── fc-th-below.json           # generated — value 10, keeps default fill
+    ├── fc-th-yellow.json          # generated — value 50 → yellow
+    ├── fc-th-red.json             # generated — value 80 → red
+    └── fc-th-invert.json          # generated — value 90, invert on
 ```
 
-`rule-color.json` is **generated** from the plugin's own defaults so its option
-shape always matches the panel. Regenerate it after changing `src/defaults.ts`
-or the shared diagram:
+The dashboard JSON files are **generated** from the plugin's own defaults so the
+option shape always matches the panel. Regenerate them after changing
+`src/defaults.ts` or the shared diagram:
 
 ```bash
-npx ts-node e2e/gen-dashboard.ts
+npm run e2e:gen-dashboard
 ```
 
 Open a provisioned dashboard in a test via the `gotoDashboardPage` fixture:
@@ -193,6 +197,7 @@ thresholds, maps, value mapping, tooltip, navigator, robustness).
 | Panel smoke | `e2e/panel.spec.ts` | "FlowCharting React" is selectable as a visualization; panel mounts (`.fc-panel-wrapper`) with no panel error |
 | Add diagram via XML | `e2e/add-diagram-xml.spec.ts` | Paste the shared test diagram's XML (`e2e/fixtures/тестовая схема.drawio`) into the Flowcharts editor → the diagram renders as SVG (>3 path nodes, i.e. stencils loaded) with no panel error |
 | Rule colors a cell | `e2e/rule-colors-cell.spec.ts` | Provisioned dashboard: TestData current value 90 → rule level 2 → shape map paints the ingress cell's fillColor red (`#F2495C`) in the rendered SVG |
+| Thresholds & coloring (group E) | `e2e/thresholds.spec.ts` | Provisioned dashboards across values 10/50/80/90: below-threshold keeps original fill; 50→yellow; 80→red; invert keeps the matched color (regression guard) |
 
 ### Not yet covered
 
