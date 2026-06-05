@@ -39,6 +39,10 @@ export default defineConfig({
     baseURL: GRAFANA_URL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // Slow each action down for headed/visual runs: `SLOW_MO=800 npm run e2e:headed`.
+    launchOptions: {
+      slowMo: process.env.SLOW_MO ? Number(process.env.SLOW_MO) : 0,
+    },
   },
 
   projects: [
