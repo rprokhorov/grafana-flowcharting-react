@@ -30,6 +30,7 @@ function xcellStub(id: string) {
     match: () => true,
     restoreAllStyles: () => {},
     restoreLabel: () => {},
+    restoreLink: () => {},
     setStyle: (k: string, v: string | null) => { styles[k] = v; },
     getStyle: () => null,
     _styles: styles,
