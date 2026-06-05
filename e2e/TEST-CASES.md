@@ -21,18 +21,18 @@ level 2 red `#F2495C`.
 
 ## Groups
 
-| # | Group | Cases |
-|---|---|---|
-| A | Panel lifecycle & loading | A1–A4 |
-| B | Diagram sources | B1–B5 |
-| C | Display options | C1–C7 |
-| D | Metrics & aggregation | D1–D5 |
-| E | Thresholds & coloring | E1–E7 (E1–E4 ✅) |
-| F | Shape / text / link / event maps | F1–F8 |
-| G | Value & range mapping | G1–G3 |
-| H | Tooltip | H1–H4 |
-| I | Navigator (multi-diagram) | I1–I3 |
-| J | Robustness & errors | J1–J5 |
+| # | Group | Cases | Automated |
+|---|---|---|---|
+| A | Panel lifecycle & loading | A1–A4 | A1 |
+| B | Diagram sources | B1–B5 | B1 |
+| C | Display options | C1–C7 | — |
+| D | Metrics & aggregation | D1–D5 | D1, D2, D3, D5 |
+| E | Thresholds & coloring | E1–E7 | E1–E4 |
+| F | Shape / text / link / event maps | F1–F8 | F1, F4 |
+| G | Value & range mapping | G1–G3 | G1, G2, G3 |
+| H | Tooltip | H1–H4 | H1, H2, H4 |
+| I | Navigator (multi-diagram) | I1–I3 | I1, I2, I3 |
+| J | Robustness & errors | J1–J5 | J1, J3, J4 |
 
 ---
 
@@ -125,11 +125,11 @@ only the focused panel resets (regression guard for the listener-leak fix).
 **Preconditions:** series current value 90, thresholds 0/50/80.
 **Expected:** The ruled cell is painted level-2 red.
 
-### D2 — Max aggregation &nbsp;`⬜`
+### D2 — Max aggregation &nbsp;`✅ aggregation.spec.ts`
 **Preconditions:** series `[10, 90, 30]`, aggregation **Max**, thresholds 0/50/80.
 **Expected:** Level resolves from 90 → red.
 
-### D3 — Average aggregation &nbsp;`⬜`
+### D3 — Average aggregation &nbsp;`✅ aggregation.spec.ts`
 **Preconditions:** series `[40, 60]`, aggregation **Average** (=50), thresholds
 0/50/80.
 **Expected:** Level resolves from 50 → level 1 yellow.
@@ -138,7 +138,7 @@ only the focused panel resets (regression guard for the listener-leak fix).
 **Preconditions:** rule pattern `/A-series/`, a series named `A-series`.
 **Expected:** The rule matches and colors its cell.
 
-### D5 — Non-matching pattern leaves cells untouched &nbsp;`⬜`
+### D5 — Non-matching pattern leaves cells untouched &nbsp;`✅ aggregation.spec.ts`
 **Preconditions:** rule pattern that matches no series.
 **Expected:** No cell is recolored; cells keep their original fills.
 
@@ -190,7 +190,7 @@ is not recolored to the opposite end). Regression guard for the invert fix.
 **Preconditions:** a cell with metadata; shape map matches by `metadata`.
 **Expected:** The cell is recolored; its metadata is preserved.
 
-### F4 — Text map replaces label with the formatted value &nbsp;`⬜`
+### F4 — Text map replaces label with the formatted value &nbsp;`✅ text-mapping.spec.ts`
 **Preconditions:** text map `textReplace=content`, `textOn=wc`, current value 90.
 **Expected:** The cell's label becomes the formatted value (e.g. `90`).
 
@@ -218,15 +218,15 @@ satisfies.
 
 ## G. Value & range mapping
 
-### G1 — Value mapping replaces the displayed value &nbsp;`⬜`
+### G1 — Value mapping replaces the displayed value &nbsp;`✅ text-mapping.spec.ts`
 **Preconditions:** value mapping `1 → "Active"`, current value 1, text map on.
 **Expected:** The cell label shows `Active`.
 
-### G2 — Range mapping replaces the displayed value &nbsp;`⬜`
+### G2 — Range mapping replaces the displayed value &nbsp;`✅ text-mapping.spec.ts`
 **Preconditions:** range mapping `0–10 → "Low"`, current value 5.
 **Expected:** The cell label shows `Low`.
 
-### G3 — Unit & decimals formatting &nbsp;`⬜`
+### G3 — Unit & decimals formatting &nbsp;`✅ text-mapping.spec.ts`
 **Preconditions:** unit `percent`, decimals 1, current value 42.5.
 **Expected:** The label shows the formatted value (e.g. `42.5%`).
 
@@ -234,11 +234,11 @@ satisfies.
 
 ## H. Tooltip
 
-### H1 — Hovering a ruled cell shows a tooltip &nbsp;`⬜`
+### H1 — Hovering a ruled cell shows a tooltip &nbsp;`✅ tooltip.spec.ts`
 **Steps:** Hover the ruled cell.
 **Expected:** `.fc-tooltip` appears near the cursor with the rule label and value.
 
-### H2 — Tooltip shows a sparkline for time-series &nbsp;`⬜`
+### H2 — Tooltip shows a sparkline for time-series &nbsp;`✅ tooltip.spec.ts`
 **Preconditions:** series with ≥ 2 points.
 **Expected:** The tooltip contains a sparkline (`.fc-tooltip-sparkline`).
 
@@ -246,7 +246,7 @@ satisfies.
 **Preconditions:** two rules mapping to the same cell.
 **Expected:** The tooltip lists a series entry per matching rule.
 
-### H4 — Tooltip hides on mouse-out &nbsp;`⬜`
+### H4 — Tooltip hides on mouse-out &nbsp;`✅ tooltip.spec.ts`
 **Steps:** Hover the cell, then move off it.
 **Expected:** The tooltip disappears.
 
@@ -254,16 +254,16 @@ satisfies.
 
 ## I. Navigator (multi-diagram)
 
-### I1 — Navigator hidden with a single diagram &nbsp;`⬜`
+### I1 — Navigator hidden with a single diagram &nbsp;`✅ navigator.spec.ts`
 **Preconditions:** one flowchart.
 **Expected:** No `.fc-navigator` is shown.
 
-### I2 — Navigator shown and pages between diagrams &nbsp;`⬜`
+### I2 — Navigator shown and pages between diagrams &nbsp;`✅ navigator.spec.ts`
 **Preconditions:** two flowcharts.
 **Expected:** `.fc-navigator` shows `1 / 2`; clicking next renders the second
 diagram and the label becomes `2 / 2`.
 
-### I3 — Navigator buttons disable at the ends &nbsp;`⬜`
+### I3 — Navigator buttons disable at the ends &nbsp;`✅ navigator.spec.ts`
 **Preconditions:** two flowcharts.
 **Expected:** Prev is disabled on the first diagram; Next is disabled on the last.
 
@@ -271,7 +271,7 @@ diagram and the label becomes `2 / 2`.
 
 ## J. Robustness & errors
 
-### J1 — Invalid XML does not crash the panel &nbsp;`⬜`
+### J1 — Invalid XML does not crash the panel &nbsp;`✅ robustness.spec.ts`
 **Steps:** Paste malformed / non-draw.io XML → refresh.
 **Expected:** No React crash / panel error banner; the diagram area is empty or
 shows a placeholder; the rest of the dashboard is unaffected.
@@ -281,11 +281,11 @@ shows a placeholder; the rest of the dashboard is unaffected.
 **Expected:** The unknown shape renders as a blank rectangle (placeholder); the
 rest of the diagram renders; only a console warning is emitted.
 
-### J3 — Empty data (no series) &nbsp;`⬜`
+### J3 — Empty data (no series) &nbsp;`✅ robustness.spec.ts`
 **Preconditions:** a ruled panel with a query that returns no data.
 **Expected:** The diagram renders with cells at their default styles; no error.
 
-### J4 — Two panels on one dashboard don't interfere &nbsp;`⬜`
+### J4 — Two panels on one dashboard don't interfere &nbsp;`✅ robustness.spec.ts`
 **Preconditions:** two FlowCharting panels on one dashboard.
 **Expected:** Each renders its own diagram; interacting with one (Escape/zoom)
 does not affect the other. Regression guard for the listener-leak fix.

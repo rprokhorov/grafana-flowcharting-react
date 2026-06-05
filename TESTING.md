@@ -197,11 +197,22 @@ thresholds, maps, value mapping, tooltip, navigator, robustness).
 | Panel smoke | `e2e/panel.spec.ts` | "FlowCharting React" is selectable as a visualization; panel mounts (`.fc-panel-wrapper`) with no panel error |
 | Add diagram via XML | `e2e/add-diagram-xml.spec.ts` | Paste the shared test diagram's XML (`e2e/fixtures/тестовая схема.drawio`) into the Flowcharts editor → the diagram renders as SVG (>3 path nodes, i.e. stencils loaded) with no panel error |
 | Rule colors a cell | `e2e/rule-colors-cell.spec.ts` | Provisioned dashboard: TestData current value 90 → rule level 2 → shape map paints the ingress cell's fillColor red (`#F2495C`) in the rendered SVG |
-| Thresholds & coloring (group E) | `e2e/thresholds.spec.ts` | Provisioned dashboards across values 10/50/80/90: below-threshold keeps original fill; 50→yellow; 80→red; invert keeps the matched color (regression guard) |
+| Thresholds & coloring (E) | `e2e/thresholds.spec.ts` | values 10/50/80/90: below-threshold keeps original fill; 50→yellow; 80→red; invert keeps the matched color (regression guard) |
+| Aggregation & matching (D) | `e2e/aggregation.spec.ts` | max([10,90,30])→red; avg([40,60])→yellow; non-matching pattern leaves cells untouched |
+| Text & value mapping (F/G) | `e2e/text-mapping.spec.ts` | text map writes the formatted value (`90.00`); value mapping `90→CRIT`; range mapping `0–100→OK`; unit+decimals `42.5→42.5%` |
+| Tooltip (H) | `e2e/tooltip.spec.ts` | hovering a cell shows `.fc-tooltip` with a sparkline; it hides on mouse-out |
+| Navigator (I) | `e2e/navigator.spec.ts` | hidden with one diagram; with two: shows `1 / 2`, Next pages to `2 / 2`, buttons disable at the ends |
+| Robustness (J) | `e2e/robustness.spec.ts` | invalid XML doesn't crash the panel; no-data renders defaults; two panels render independently |
 
 ### Not yet covered
 
-- Flowchart navigator paging between multiple diagrams (e2e).
+See the ⬜ cases in [e2e/TEST-CASES.md](e2e/TEST-CASES.md) for the full backlog.
+Highlights:
+
+- Display options (group C): lock, grid, zoom, wheel zoom, Escape reset — these
+  need pixel/interaction assertions that are inherently flakier.
+- Match by cell value / metadata (F2, F3) and event maps (F7).
+- String / date thresholds (E5, E6).
 - React component tests for `FlowChartNavigator`, `DiagramTooltip`,
   `StatusOverlay`, and the rule editors (`@testing-library/react`).
 - `LinkMap` behaviour (currently a no-op in `XCell.setLink`).
