@@ -20,6 +20,8 @@ export class XCell {
   readonly uid: string;
   private readonly _graph: any;
   private _defaultValues: XCellDefaultValues;
+  /** Style keys written by setStyle that were not in the original style. */
+  private _appliedStyleKeys = new Set<TStyleKeys>();
   percent = 100;
 
   constructor(graph: any, mxcell: mxCell) {
@@ -118,6 +120,12 @@ export class XCell {
   }
 
   setStyle(key: TStyleKeys, value: string | null): void {
+    // Remember keys that weren't part of the cell's original style so they can
+    // be removed on restore — otherwise a rule that adds e.g. gradientColor
+    // would leave it behind once the rule no longer matches.
+    if (value !== null && !this._defaultValues.styles?.has(key)) {
+      this._appliedStyleKeys.add(key);
+    }
     this._graph.setCellStyles(key, value, [this.mxcell]);
   }
 
@@ -136,11 +144,18 @@ export class XCell {
   }
 
   restoreAllStyles(): void {
+    // Remove any keys a rule added that weren't in the original style.
+    if (this._appliedStyleKeys.size > 0) {
+      this._appliedStyleKeys.forEach((k) => {
+        this._graph.setCellStyles(k, null, [this.mxcell]);
+      });
+      this._appliedStyleKeys.clear();
+    }
     if (!this._defaultValues.styles) {
       return;
     }
     this._defaultValues.styles.forEach((val, k) => {
-      this.setStyle(k, val ?? null);
+      this._graph.setCellStyles(k, val ?? null, [this.mxcell]);
     });
   }
 
