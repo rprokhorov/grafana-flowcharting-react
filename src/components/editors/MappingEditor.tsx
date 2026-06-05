@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Input, Select } from '@grafana/ui';
-import type { TShapeMapData, TTextMapData, TLinkMapData, TEventMapData } from '../../types';
+import { Button, InlineField, Input, Select, Switch } from '@grafana/ui';
+import type {
+  TShapeMapData,
+  TTextMapData,
+  TLinkMapData,
+  TEventMapData,
+  TRuleMapOptions,
+  TPropertieKey,
+} from '../../types';
 import { ShapeMap } from '../../core/rules/mappings/ShapeMap';
 import { TextMap } from '../../core/rules/mappings/TextMap';
 import { LinkMap } from '../../core/rules/mappings/LinkMap';
@@ -62,6 +69,49 @@ function useCellPicker(onPick: (index: number, cellId: string) => void) {
 
   return { pickingIndex, startPick, cancelPick };
 }
+
+// ─── Map match options ──────────────────────────────────────────────────────
+
+const IDENT_BY_OPTIONS: Array<{ label: string; value: TPropertieKey }> = [
+  { label: 'Cell id', value: 'id' },
+  { label: 'Cell value', value: 'value' },
+  { label: 'Metadata', value: 'metadata' },
+];
+
+interface MapOptionsRowProps {
+  options: TRuleMapOptions;
+  onChange: (options: TRuleMapOptions) => void;
+}
+
+/** Edits a map group's match options: identify-by prop, metadata key, regex. */
+export const MapOptionsRow: React.FC<MapOptionsRowProps> = ({ options, onChange }) => (
+  <div style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+    <InlineField label="Match by">
+      <Select
+        options={IDENT_BY_OPTIONS}
+        value={options.identByProp}
+        onChange={(v) => onChange({ ...options, identByProp: v.value as TPropertieKey })}
+        width={16}
+      />
+    </InlineField>
+    {options.identByProp === 'metadata' && (
+      <InlineField label="Metadata key">
+        <Input
+          value={options.metadata}
+          onChange={(e) => onChange({ ...options, metadata: (e.target as HTMLInputElement).value })}
+          width={16}
+          placeholder="attribute"
+        />
+      </InlineField>
+    )}
+    <InlineField label="Regex">
+      <Switch
+        value={options.enableRegEx}
+        onChange={(e) => onChange({ ...options, enableRegEx: (e.target as HTMLInputElement).checked })}
+      />
+    </InlineField>
+  </div>
+);
 
 // ─── Shape Maps ───────────────────────────────────────────────────────────────
 

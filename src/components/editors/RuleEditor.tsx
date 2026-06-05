@@ -2,7 +2,8 @@ import React from 'react';
 import { Collapse, InlineField, Input, Select } from '@grafana/ui';
 import type { TIRuleData } from '../../types';
 import { ThresholdEditor } from './ThresholdEditor';
-import { ShapeMapsEditor, TextMapsEditor, LinkMapsEditor, EventMapsEditor } from './MappingEditor';
+import { ShapeMapsEditor, TextMapsEditor, LinkMapsEditor, EventMapsEditor, MapOptionsRow } from './MappingEditor';
+import type { TRuleMapOptions } from '../../types';
 
 const AGGREGATION_OPTIONS = [
   { label: 'Current', value: 'current' },
@@ -34,6 +35,14 @@ interface RuleEditorProps {
 
 export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, onChange }) => {
   const update = (patch: Partial<TIRuleData>) => onChange({ ...rule, ...patch });
+
+  const updateMapOptions = (
+    group: 'shapes' | 'texts' | 'links' | 'events',
+    options: TRuleMapOptions
+  ) =>
+    update({
+      mapsDat: { ...rule.mapsDat, [group]: { ...rule.mapsDat[group], options } },
+    });
 
   const [openMetric, setOpenMetric] = React.useState(true);
   const [openThresholds, setOpenThresholds] = React.useState(true);
@@ -117,6 +126,7 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, onChange }) => {
 
       {/* Shape maps */}
       <Collapse label="Shape maps" isOpen={openShapeMaps} onToggle={() => setOpenShapeMaps((v) => !v)}>
+        <MapOptionsRow options={rule.mapsDat.shapes.options} onChange={(o) => updateMapOptions('shapes', o)} />
         <ShapeMapsEditor
           data={rule.mapsDat.shapes.dataList}
           onChange={(dataList) =>
@@ -127,6 +137,7 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, onChange }) => {
 
       {/* Text maps */}
       <Collapse label="Text maps" isOpen={openTextMaps} onToggle={() => setOpenTextMaps((v) => !v)}>
+        <MapOptionsRow options={rule.mapsDat.texts.options} onChange={(o) => updateMapOptions('texts', o)} />
         <TextMapsEditor
           data={rule.mapsDat.texts.dataList}
           onChange={(dataList) =>
@@ -137,6 +148,7 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, onChange }) => {
 
       {/* Link maps */}
       <Collapse label="Link maps" isOpen={openLinkMaps} onToggle={() => setOpenLinkMaps((v) => !v)}>
+        <MapOptionsRow options={rule.mapsDat.links.options} onChange={(o) => updateMapOptions('links', o)} />
         <LinkMapsEditor
           data={rule.mapsDat.links.dataList}
           onChange={(dataList) =>
@@ -147,6 +159,7 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, onChange }) => {
 
       {/* Event maps */}
       <Collapse label="Event maps" isOpen={openEventMaps} onToggle={() => setOpenEventMaps((v) => !v)}>
+        <MapOptionsRow options={rule.mapsDat.events.options} onChange={(o) => updateMapOptions('events', o)} />
         <EventMapsEditor
           data={rule.mapsDat.events.dataList}
           onChange={(dataList) =>
