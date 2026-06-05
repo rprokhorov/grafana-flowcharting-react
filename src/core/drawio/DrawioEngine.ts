@@ -144,21 +144,27 @@ export class DrawioEngine {
   }
 
   static isValidXml(source: string): boolean {
+    let g: any;
     try {
       const div = document.createElement('div');
-      const g = new Graph(div);
+      g = new Graph(div);
       if (DrawioEngine.isEncoded(source)) {
         source = DrawioEngine.decode(source);
       }
       const xmlDoc = mxUtils.parseXml(source);
       const codec = new mxCodec(xmlDoc);
       g.getModel().beginUpdate();
-      codec.decode(xmlDoc.documentElement, g.getModel());
-      g.getModel().endUpdate();
-      g.destroy();
+      try {
+        codec.decode(xmlDoc.documentElement, g.getModel());
+      } finally {
+        g.getModel().endUpdate();
+      }
       return true;
     } catch {
       return false;
+    } finally {
+      // Always tear the temporary graph down, even if decode threw.
+      g?.destroy?.();
     }
   }
 

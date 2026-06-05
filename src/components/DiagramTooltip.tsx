@@ -62,7 +62,7 @@ export const DiagramTooltip: React.FC<DiagramTooltipProps> = ({ tooltip }) => {
       <div className="fc-tooltip" style={style}>
         {label && <div className="fc-tooltip-header">{label}</div>}
 
-        {/* Single-series legacy view: show big value */}
+        {/* Single-series legacy view: show the value once. */}
         {!hasSeries && (
           <div className="fc-tooltip-value" style={{ color: tooltip.color }}>
             {tooltip.formattedValue}
@@ -73,13 +73,6 @@ export const DiagramTooltip: React.FC<DiagramTooltipProps> = ({ tooltip }) => {
         {seriesData.map((s, i) => (
           <SparklineChart key={i} series={s} />
         ))}
-
-        {/* If no sparkline data at all and single series, show value only */}
-        {!hasSeries && seriesData.length === 0 && (
-          <div className="fc-tooltip-value" style={{ color: tooltip.color }}>
-            {tooltip.formattedValue}
-          </div>
-        )}
       </div>
     </Portal>
   );
