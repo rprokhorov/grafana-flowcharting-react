@@ -42,25 +42,44 @@ export const FlowchartsEditor: React.FC<Props> = ({ value, onChange }) => {
     const fc = data.flowcharts[index];
     const editorUrl = data.editorUrl || 'https://embed.diagrams.net';
     const url = `${editorUrl}?embed=1&spin=1&proto=json&libraries=1&ui=${data.editorTheme || 'kennedy'}`;
+
+    // Restrict postMessage to the editor's own origin instead of '*'.
+    let editorOrigin = '*';
+    try {
+      editorOrigin = new URL(editorUrl).origin;
+    } catch {
+      // keep '*' if editorUrl isn't a parseable absolute URL
+    }
+
     const win = window.open(url, '_blank', 'width=1200,height=800');
     if (!win) {
       alert('Popup blocked. Allow popups to use the draw.io editor.');
       return;
     }
 
+    let closedPoll: ReturnType<typeof setInterval> | undefined;
+    const cleanup = () => {
+      window.removeEventListener('message', handleMessage);
+      if (closedPoll) {
+        clearInterval(closedPoll);
+        closedPoll = undefined;
+      }
+    };
+
     const handleMessage = (event: MessageEvent) => {
-      if (event.source !== win) {
+      // Only trust messages from the popup we opened, on the editor's origin.
+      if (event.source !== win || (editorOrigin !== '*' && event.origin !== editorOrigin)) {
         return;
       }
       try {
         const msg = JSON.parse(event.data);
         if (msg.event === 'init') {
-          win.postMessage(JSON.stringify({ action: 'load', xml: fc.xml }), '*');
+          win.postMessage(JSON.stringify({ action: 'load', xml: fc.xml }), editorOrigin);
         } else if (msg.event === 'save') {
           updateFlowchart(index, { xml: msg.xml });
-          win.postMessage(JSON.stringify({ action: 'export', format: 'xml', xml: msg.xml }), '*');
+          win.postMessage(JSON.stringify({ action: 'export', format: 'xml', xml: msg.xml }), editorOrigin);
         } else if (msg.event === 'exit') {
-          window.removeEventListener('message', handleMessage);
+          cleanup();
           win.close();
         }
       } catch {
@@ -69,6 +88,12 @@ export const FlowchartsEditor: React.FC<Props> = ({ value, onChange }) => {
     };
 
     window.addEventListener('message', handleMessage);
+    // If the user closes the popup manually, tear the listener down too.
+    closedPoll = setInterval(() => {
+      if (win.closed) {
+        cleanup();
+      }
+    }, 1000);
   };
 
   return (
