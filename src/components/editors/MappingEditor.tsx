@@ -35,6 +35,29 @@ const STYLE_KEYS = [
   { label: 'fontColor', value: 'fontColor' },
   { label: 'gradientColor', value: 'gradientColor' },
 ];
+const TEXT_REPLACE_OPTIONS = [
+  { label: 'Replace all', value: 'content' },
+  { label: 'Replace pattern', value: 'pattern' },
+  { label: 'Append after', value: 'as' },
+  { label: 'Append new line', value: 'anl' },
+];
+const EVENT_STYLE_OPTIONS = [
+  { label: 'opacity', value: 'opacity' },
+  { label: 'fillColor', value: 'fillColor' },
+  { label: 'strokeColor', value: 'strokeColor' },
+  { label: 'fontColor', value: 'fontColor' },
+  { label: 'visibility', value: 'visibility' },
+  { label: 'blink', value: 'blink' },
+];
+const EVENT_COMPARATOR_OPTIONS = [
+  { label: '<', value: 'lt' },
+  { label: '<=', value: 'le' },
+  { label: '==', value: 'eq' },
+  { label: '!=', value: 'ne' },
+  { label: '>=', value: 'ge' },
+  { label: '>', value: 'gt' },
+  { label: 'always', value: 'al' },
+];
 
 /**
  * Hook that tracks whether CellPickerService is active for a specific slot.
@@ -191,6 +214,10 @@ export const TextMapsEditor: React.FC<TextMapsEditorProps> = ({ data, onChange }
             title="Click to pick a cell from the diagram"
             onClick={() => pickingIndex === i ? cancelPick() : startPick(i)}
           />
+          <Select options={TEXT_REPLACE_OPTIONS} value={item.textReplace} onChange={(v) => update(i, { textReplace: v.value as any })} width={16} />
+          {item.textReplace === 'pattern' && (
+            <Input value={item.textPattern} onChange={(e) => update(i, { textPattern: (e.target as HTMLInputElement).value })} placeholder="regex" width={12} />
+          )}
           <Select options={TEXT_ON_OPTIONS} value={item.textOn} onChange={(v) => update(i, { textOn: v.value as any })} width={14} />
           <Button variant="destructive" size="sm" icon="trash-alt" onClick={() => remove(i)} />
         </div>
@@ -278,6 +305,8 @@ export const EventMapsEditor: React.FC<EventMapsEditorProps> = ({ data, onChange
             title="Click to pick a cell from the diagram"
             onClick={() => pickingIndex === i ? cancelPick() : startPick(i)}
           />
+          <Select options={EVENT_STYLE_OPTIONS} value={item.style} onChange={(v) => update(i, { style: v.value as any })} width={12} />
+          <Select options={EVENT_COMPARATOR_OPTIONS} value={item.comparator} onChange={(v) => update(i, { comparator: v.value as any })} width={10} />
           <Input value={item.value} onChange={(e) => update(i, { value: (e.target as HTMLInputElement).value })} placeholder="value" width={10} />
           <Button variant="destructive" size="sm" icon="trash-alt" onClick={() => remove(i)} />
         </div>

@@ -119,7 +119,9 @@ const TEXT_MAP: TTextMapData = {
   hidden: false,
   textReplace: 'content',
   textPattern: '',
-  textOn: 'wc',
+  // 'wmd' = write whenever there's metric data (independent of threshold level),
+  // which is what these formatting tests want (G3's value is below all thresholds).
+  textOn: 'wmd',
 };
 
 // ── E / D / F coloring scenarios ────────────────────────────────────────────

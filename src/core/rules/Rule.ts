@@ -193,13 +193,13 @@ export class Rule {
       sm.apply(xgraph, xcells, level, color, level, maps.shapes.options);
     }
     for (const tm of this._textMaps) {
-      tm.apply(xcells, formattedValue, rawValue, maps.texts.options);
+      tm.apply(xcells, formattedValue, rawValue, level, maps.texts.options);
     }
     for (const lm of this._linkMaps) {
       lm.apply(xcells, level, maps.links.options);
     }
     for (const em of this._eventMaps) {
-      em.apply(xgraph, xcells, rawValue, maps.events.options);
+      em.apply(xgraph, xcells, rawValue, level, maps.events.options);
     }
   }
 
