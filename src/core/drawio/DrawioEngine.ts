@@ -312,10 +312,12 @@ export class DrawioEngine {
       try {
         originalPaint.call(this, c);
       } catch (e: any) {
-        // Silently ignore drawShape errors from missing stencils.
-        // The deferred refresh in XGraph will re-paint once stencils load.
-        if (e?.message?.includes('drawShape') || e?.message?.includes('undefined')) {
-          // Draw a placeholder rectangle so the cell is visible
+        const msg: string = e?.message ?? '';
+        // The expected case: a custom stencil (kubernetes/aws/…) hasn't loaded
+        // yet, so paint hits drawShape on an undefined stencil. Draw a
+        // placeholder; the deferred refresh in XGraph re-paints once it loads.
+        const isMissingStencil = msg.includes('drawShape');
+        if (isMissingStencil) {
           try {
             if (this.bounds) {
               c.begin();
@@ -323,9 +325,19 @@ export class DrawioEngine {
               c.fillAndStroke();
             }
           } catch { /* ignore */ }
-        } else {
-          throw e;
+          return;
         }
+        // Any other paint error is a real bug — log it (so it's not lost) and
+        // still draw a placeholder so one broken shape doesn't blank the whole
+        // diagram, rather than swallowing it silently on a loose 'undefined' match.
+        console.warn('[DrawioEngine] shape paint error:', e);
+        try {
+          if (this.bounds) {
+            c.begin();
+            c.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+            c.fillAndStroke();
+          }
+        } catch { /* ignore */ }
       }
     };
   }
