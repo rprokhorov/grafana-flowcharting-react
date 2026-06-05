@@ -45,6 +45,8 @@ export class XGraph {
   private _contextMenuHandler?: (evt: Event) => void;
   /** Pending setTimeout ids (stencil refresh, animations) cleared on free(). */
   private _timers = new Set<ReturnType<typeof setTimeout>>();
+  /** Called when a deferred stencil refresh first creates xcells. */
+  private _onStencilRefresh?: () => void;
 
   constructor(container: HTMLDivElement, type: TSourceTypeKeys, definition: string, options?: XGraphOptions) {
     this.container = container;
@@ -109,9 +111,15 @@ export class XGraph {
       try {
         this._graph.refresh();
         this._updateOptions();
-        // Re-init xcells in case the first attempt failed
+        // Re-init xcells in case the first attempt failed (stencils that were
+        // still loading have now registered their shapes). If this produces
+        // cells that weren't there before, the consumer needs to re-apply rules
+        // so the freshly-created cells get their styling.
         if (this.xcells.length === 0) {
           this._initXCells();
+          if (this.xcells.length > 0) {
+            this._onStencilRefresh?.();
+          }
         }
       } catch (e) {
         console.warn('[XGraph] deferred refresh error:', e);
@@ -168,6 +176,11 @@ export class XGraph {
   setHoverCallbacks(onHover: CellHoverCallback, onHoverEnd: CellHoverEndCallback): void {
     this._onCellHover = onHover;
     this._onCellHoverEnd = onHoverEnd;
+  }
+
+  /** Register a callback fired when a deferred stencil refresh creates xcells. */
+  setOnStencilRefresh(cb: () => void): void {
+    this._onStencilRefresh = cb;
   }
 
   // ─── Cell access ──────────────────────────────────────────────────────────────
