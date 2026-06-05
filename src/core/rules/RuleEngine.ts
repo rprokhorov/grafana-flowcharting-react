@@ -53,6 +53,7 @@ export class RuleEngine {
     for (const xcell of xcells) {
       xcell.restoreAllStyles();
       xcell.restoreLabel();
+      xcell.restoreLink();
     }
 
     // Apply rules in order

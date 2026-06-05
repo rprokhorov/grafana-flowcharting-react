@@ -44,3 +44,36 @@ describe('XCell.restoreAllStyles', () => {
     expect(cell.style).toContain('strokeColor=#333333');
   });
 });
+
+describe('XCell links', () => {
+  it('uses graph.setLinkForCell when available', () => {
+    const calls: Array<[any, string | null]> = [];
+    const cell: any = { id: '5', value: '', style: '' };
+    const graph: any = {
+      getCellGeometry: () => undefined,
+      setLinkForCell: (c: any, url: string | null) => calls.push([c, url]),
+    };
+    const xcell = new XCell(graph, cell);
+    xcell.setLink('https://example.com');
+    expect(calls).toEqual([[cell, 'https://example.com']]);
+  });
+
+  it('falls back to the link attribute on a UserObject value', () => {
+    const attrs: Record<string, string> = { label: 'node' };
+    const userObject: any = {
+      getAttribute: (k: string) => attrs[k] ?? null,
+      setAttribute: (k: string, v: string) => { attrs[k] = v; },
+      removeAttribute: (k: string) => { delete attrs[k]; },
+    };
+    const cell: any = { id: '6', value: userObject, style: '' };
+    const graph: any = { getCellGeometry: () => undefined, getModel: () => ({ setValue: () => {} }) };
+    const xcell = new XCell(graph, cell);
+
+    xcell.setLink('https://example.com/x');
+    expect(attrs.link).toBe('https://example.com/x');
+    expect(xcell.getLink()).toBe('https://example.com/x');
+
+    xcell.restoreLink(); // original had no link → removed
+    expect(attrs.link).toBeUndefined();
+  });
+});

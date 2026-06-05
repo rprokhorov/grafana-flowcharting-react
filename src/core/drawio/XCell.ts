@@ -98,16 +98,34 @@ export class XCell {
   // ─── Link ─────────────────────────────────────────────────────────────────────
 
   getLink(): string | null {
-    return this.mxcell.value?.getAttribute?.('href') ?? this._defaultValues.link ?? null;
+    const value = this.mxcell.value;
+    if (value != null && typeof value === 'object') {
+      return value.getAttribute?.('link') ?? value.getAttribute?.('href') ?? null;
+    }
+    return this._defaultValues.link ?? null;
   }
 
   setLink(url: string | null): void {
-    // Link is stored in cell metadata/style in mxGraph; simplified implementation
-    this._defaultValues.link = url;
+    // draw.io stores a cell link as the `link` attribute on a UserObject value.
+    // graph.setLinkForCell wraps a plain value in a UserObject and makes the
+    // cell clickable; fall back to setting the attribute directly if it's absent.
+    if (typeof this._graph.setLinkForCell === 'function') {
+      this._graph.setLinkForCell(this.mxcell, url ?? null);
+      return;
+    }
+    const value = this.mxcell.value;
+    if (value != null && typeof value === 'object' && value.setAttribute) {
+      if (url) {
+        value.setAttribute('link', url);
+      } else {
+        value.removeAttribute?.('link');
+      }
+      this._graph.getModel().setValue(this.mxcell, value);
+    }
   }
 
   restoreLink(): void {
-    // No-op for now — links are complex in mxGraph
+    this.setLink(this._defaultValues.link ?? null);
   }
 
   // ─── Style ────────────────────────────────────────────────────────────────────
@@ -270,12 +288,16 @@ export class XCell {
       rawValue != null && typeof rawValue === 'object'
         ? rawValue.getAttribute?.('label') ?? ''
         : rawValue;
+    const link =
+      rawValue != null && typeof rawValue === 'object'
+        ? rawValue.getAttribute?.('link') ?? null
+        : null;
 
     return {
       id: this.mxcell.id ?? null,
       value: rawValue,
       label,
-      link: null,
+      link,
       styles,
       dimension: geo ? { x: geo.x, y: geo.y, width: geo.width, height: geo.height } : undefined,
     };
