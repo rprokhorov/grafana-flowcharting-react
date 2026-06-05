@@ -8,18 +8,12 @@ export class LinkMap {
     this.data = data;
   }
 
-  apply(xcells: XCell[], level: number): void {
+  apply(xcells: XCell[], level: number, options: TRuleMapOptions): void {
     const { pattern, hidden, linkUrl, linkOn } = this.data;
     if (hidden) {
       return;
     }
-    const matchedCells = xcells.filter((x) =>
-      x.match(pattern, {
-        identByProp: 'id',
-        metadata: '',
-        enableRegEx: true,
-      } as TRuleMapOptions)
-    );
+    const matchedCells = xcells.filter((x) => x.match(pattern, options));
 
     for (const xcell of matchedCells) {
       if (linkOn === 'wc' && level > 0) {

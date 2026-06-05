@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "FlowCharting React panel plugin for Grafana 10+",
   "scripts": {
-    "build": "grafana-toolkit plugin:build",
+    "build": "webpack --config webpack.config.js",
     "test": "jest --passWithNoTests",
-    "dev": "grafana-toolkit plugin:dev",
-    "watch": "grafana-toolkit plugin:dev --watch"
+    "dev": "webpack --config webpack.config.js --watch",
+    "watch": "webpack --config webpack.config.js --watch"
   },
   "author": "FlowCharting Contributors",
   "license": "Apache-2.0",

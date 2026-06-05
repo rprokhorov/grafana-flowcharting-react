@@ -40,6 +40,8 @@ export class XGraph {
   xcells: XCell[] = [];
   private _onCellHover?: CellHoverCallback;
   private _onCellHoverEnd?: CellHoverEndCallback;
+  private _keydownHandler?: (evt: KeyboardEvent) => void;
+  private _contextMenuHandler?: (evt: Event) => void;
 
   constructor(container: HTMLDivElement, type: TSourceTypeKeys, definition: string, options?: XGraphOptions) {
     this.container = container;
@@ -122,6 +124,14 @@ export class XGraph {
 
   /** Destroy graph — call in React cleanup / useEffect return. */
   free(): void {
+    if (this._keydownHandler) {
+      document.removeEventListener('keydown', this._keydownHandler);
+      this._keydownHandler = undefined;
+    }
+    if (this._contextMenuHandler) {
+      this.container.removeEventListener('contextmenu', this._contextMenuHandler);
+      this._contextMenuHandler = undefined;
+    }
     this._graph?.destroy();
     this._graph = undefined;
     this._isInitialized = false;
@@ -253,15 +263,19 @@ export class XGraph {
       this.container
     );
 
-    // Escape key resets zoom
-    mxEvent.addListener(document, 'keydown', (evt: KeyboardEvent) => {
+    // Escape key resets zoom. Stored so it can be removed in free() — otherwise
+    // every panel mount leaks a document-level listener and Escape would reset
+    // all FlowCharting panels on the dashboard at once.
+    this._keydownHandler = (evt: KeyboardEvent) => {
       if (!mxEvent.isConsumed(evt) && evt.keyCode === 27) {
         this.refresh();
       }
-    });
+    };
+    document.addEventListener('keydown', this._keydownHandler);
 
     // Prevent context menu
-    this.container.addEventListener('contextmenu', (e) => e.preventDefault());
+    this._contextMenuHandler = (e: Event) => e.preventDefault();
+    this.container.addEventListener('contextmenu', this._contextMenuHandler);
   }
 
   /**

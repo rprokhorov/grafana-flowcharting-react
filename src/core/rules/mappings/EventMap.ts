@@ -9,18 +9,12 @@ export class EventMap {
     this.data = data;
   }
 
-  apply(xgraph: XGraph, xcells: XCell[], value: number | string | null): void {
+  apply(xgraph: XGraph, xcells: XCell[], value: number | string | null, options: TRuleMapOptions): void {
     const { pattern, hidden, style, comparator, eventOn, value: threshold } = this.data;
     if (hidden) {
       return;
     }
-    const matchedCells = xcells.filter((x) =>
-      x.match(pattern, {
-        identByProp: 'id',
-        metadata: '',
-        enableRegEx: true,
-      } as TRuleMapOptions)
-    );
+    const matchedCells = xcells.filter((x) => x.match(pattern, options));
 
     const matches = this._evalComparator(value, comparator, threshold);
 

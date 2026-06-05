@@ -82,10 +82,6 @@ export class Rule {
           highestLevel = th.getLevel();
         }
       }
-      if (this.data.invert && highestLevel >= 0) {
-        const maxLevel = this._numberTH.reduce((m, t) => Math.max(m, t.getLevel()), 0);
-        return maxLevel - highestLevel;
-      }
       return highestLevel;
     }
 
@@ -171,10 +167,23 @@ export class Rule {
 
   evaluate(metric: IMetric): RuleEvaluationResult {
     const rawValue = metric.getValue(this.data.aggregation, this.data.column || undefined);
-    const level = this.getThresholdLevel(rawValue);
-    const color = this.getColorForLevel(level);
+    // matchedLevel = the threshold the value actually crossed; its color is the
+    // one we paint with. `level` is the severity used for cross-rule comparison
+    // and may be inverted (low values treated as high) when `invert` is set.
+    const matchedLevel = this.getThresholdLevel(rawValue);
+    const color = this.getColorForLevel(matchedLevel);
+    const level = this._applyInvert(matchedLevel);
     const formattedValue = this.getFormattedValue(rawValue);
     return { level, color, formattedValue, rawValue };
+  }
+
+  /** Mirror a matched level across the threshold range when `invert` is on. */
+  private _applyInvert(level: number): number {
+    if (!this.data.invert || level < 0 || this.data.type !== 'number') {
+      return level;
+    }
+    const maxLevel = this._numberTH.reduce((m, t) => Math.max(m, t.getLevel()), 0);
+    return maxLevel - level;
   }
 
   // ─── Apply maps to cells ──────────────────────────────────────────────────────
@@ -185,18 +194,19 @@ export class Rule {
     result: RuleEvaluationResult
   ): void {
     const { level, color, formattedValue, rawValue } = result;
+    const maps = this.data.mapsDat;
 
     for (const sm of this._shapeMaps) {
-      sm.apply(xgraph, xcells, level, color, level);
+      sm.apply(xgraph, xcells, level, color, level, maps.shapes.options);
     }
     for (const tm of this._textMaps) {
-      tm.apply(xcells, formattedValue, rawValue);
+      tm.apply(xcells, formattedValue, rawValue, maps.texts.options);
     }
     for (const lm of this._linkMaps) {
-      lm.apply(xcells, level);
+      lm.apply(xcells, level, maps.links.options);
     }
     for (const em of this._eventMaps) {
-      em.apply(xgraph, xcells, rawValue);
+      em.apply(xgraph, xcells, rawValue, maps.events.options);
     }
   }
 

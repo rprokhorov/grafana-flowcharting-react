@@ -8,18 +8,12 @@ export class TextMap {
     this.data = data;
   }
 
-  apply(xcells: XCell[], formattedValue: string, rawValue: string | number | null): void {
+  apply(xcells: XCell[], formattedValue: string, rawValue: string | number | null, options: TRuleMapOptions): void {
     const { pattern, hidden, textReplace, textOn } = this.data;
     if (hidden) {
       return;
     }
-    const matchedCells = xcells.filter((x) =>
-      x.match(pattern, {
-        identByProp: 'id',
-        metadata: '',
-        enableRegEx: true,
-      } as TRuleMapOptions)
-    );
+    const matchedCells = xcells.filter((x) => x.match(pattern, options));
 
     for (const xcell of matchedCells) {
       if (textOn === 'n') {

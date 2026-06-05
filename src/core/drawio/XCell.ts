@@ -5,7 +5,10 @@ import type { TStyleKeys, TStyleColorKeys, TPropertieKey, TRuleMapOptions } from
 
 export interface XCellDefaultValues {
   id: string | null | undefined;
-  value: string | null | undefined;
+  /** Original raw value (may be a UserObject DOM node) */
+  value: any;
+  /** Original visible label text, extracted from the value */
+  label: string | null | undefined;
   link: string | null | undefined;
   styles: Map<TStyleKeys, any> | undefined;
   dimension: mxGeometry | undefined;
@@ -42,7 +45,7 @@ export class XCell {
       return this._defaultValues.id ?? '';
     }
     if (key === 'value') {
-      return this._defaultValues.value ?? '';
+      return this._defaultValues.label ?? '';
     }
     if (key === 'metadata') {
       return '';
@@ -61,16 +64,31 @@ export class XCell {
   // ─── Label ────────────────────────────────────────────────────────────────────
 
   getLabel(): string {
-    return this.mxcell.value ?? '';
+    const value = this.mxcell.value;
+    // draw.io stores labels as DOM nodes (UserObject) when a cell carries
+    // metadata. In that case the visible text lives in the `label` attribute.
+    if (value != null && typeof value === 'object') {
+      return value.getAttribute?.('label') ?? '';
+    }
+    return value ?? '';
   }
 
   setLabel(value: string): void {
+    const current = this.mxcell.value;
+    // Preserve metadata: when the value is a UserObject DOM node, only update
+    // its `label` attribute instead of replacing the whole node (which would
+    // destroy the cell's metadata).
+    if (current != null && typeof current === 'object' && current.setAttribute) {
+      current.setAttribute('label', value);
+      this._graph.getModel().setValue(this.mxcell, current);
+      return;
+    }
     this._graph.getModel().setValue(this.mxcell, value);
   }
 
   restoreLabel(): void {
-    if (this._defaultValues.value !== undefined) {
-      this.setLabel(this._defaultValues.value ?? '');
+    if (this._defaultValues.label !== undefined) {
+      this.setLabel(this._defaultValues.label ?? '');
     }
   }
 
@@ -239,9 +257,16 @@ export class XCell {
 
     const geo: mxGeometry | undefined = this._graph?.getCellGeometry?.(this.mxcell) ?? undefined;
 
+    const rawValue = this.mxcell.value ?? null;
+    const label =
+      rawValue != null && typeof rawValue === 'object'
+        ? rawValue.getAttribute?.('label') ?? ''
+        : rawValue;
+
     return {
       id: this.mxcell.id ?? null,
-      value: this.mxcell.value ?? null,
+      value: rawValue,
+      label,
       link: null,
       styles,
       dimension: geo ? { x: geo.x, y: geo.y, width: geo.width, height: geo.height } : undefined,

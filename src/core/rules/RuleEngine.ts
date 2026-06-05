@@ -72,21 +72,17 @@ export class RuleEngine {
       const metric = matchedMetrics[0];
       const result = rule.evaluate(metric);
 
-      // Find xcells matching this rule's shape/text/link maps
-      // We collect all xcells that any map targets
+      // Find xcells matching this rule's shape/text/link/event maps.
+      // Each map group carries its own options (identByProp / regex / metadata),
+      // so we must match using the group's options — not shapes' for all.
       const affectedCells = new Set<XCell>();
-      for (const mapData of [
-        ...rule.data.mapsDat.shapes.dataList,
-        ...rule.data.mapsDat.texts.dataList,
-        ...rule.data.mapsDat.links.dataList,
-        ...rule.data.mapsDat.events.dataList,
-      ]) {
-        const cells = xgraph.findXCells(
-          mapData.pattern,
-          rule.data.mapsDat.shapes.options
-        );
-        for (const c of cells) {
-          affectedCells.add(c);
+      const maps = rule.data.mapsDat;
+      for (const group of [maps.shapes, maps.texts, maps.links, maps.events]) {
+        for (const mapData of group.dataList) {
+          const cells = xgraph.findXCells(mapData.pattern, group.options);
+          for (const c of cells) {
+            affectedCells.add(c);
+          }
         }
       }
 

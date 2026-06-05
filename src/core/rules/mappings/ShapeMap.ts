@@ -9,18 +9,12 @@ export class ShapeMap {
     this.data = data;
   }
 
-  apply(xgraph: XGraph, xcells: XCell[], level: number, color: string, highestLevel: number): void {
+  apply(xgraph: XGraph, xcells: XCell[], level: number, color: string, highestLevel: number, options: TRuleMapOptions): void {
     const { colorOn, style, hidden, pattern } = this.data;
     if (hidden) {
       return;
     }
-    const matchedCells = xcells.filter((x) =>
-      x.match(pattern, {
-        identByProp: 'id',
-        metadata: '',
-        enableRegEx: true,
-      } as TRuleMapOptions)
-    );
+    const matchedCells = xcells.filter((x) => x.match(pattern, options));
     for (const xcell of matchedCells) {
       if (colorOn === 'n') {
         // Never apply color

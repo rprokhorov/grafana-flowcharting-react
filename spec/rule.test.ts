@@ -86,3 +86,41 @@ describe('Rule.getColorForLevel', () => {
     expect(rule.getColorForLevel(1)).toBe('#FADE2A');
   });
 });
+
+describe('Rule.evaluate', () => {
+  const makeMetric = (value: number) =>
+    ({
+      name: 'm',
+      type: 'serie' as const,
+      getValue: () => value,
+      getDataPoints: () => [],
+      getColumnNames: () => [],
+    });
+
+  const threeThresholds = [
+    { level: 0, value: 0, color: '#73BF69', comparator: 'ge' as const },
+    { level: 1, value: 50, color: '#FADE2A', comparator: 'ge' as const },
+    { level: 2, value: 80, color: '#F2495C', comparator: 'ge' as const },
+  ];
+
+  it('uses the color of the threshold the value actually crossed', () => {
+    const rule = new Rule({ ...getDefaultRuleData(), type: 'number', numberTHData: threeThresholds });
+    const r = rule.evaluate(makeMetric(90));
+    expect(r.level).toBe(2);
+    expect(r.color).toBe('#F2495C');
+  });
+
+  it('with invert: keeps the matched threshold color but mirrors the severity level', () => {
+    const rule = new Rule({
+      ...getDefaultRuleData(),
+      type: 'number',
+      invert: true,
+      numberTHData: threeThresholds,
+    });
+    // value 90 crosses level-2 threshold (red). With invert the severity is
+    // mirrored to 0, but the painted color must still be the matched red.
+    const r = rule.evaluate(makeMetric(90));
+    expect(r.color).toBe('#F2495C');
+    expect(r.level).toBe(0);
+  });
+});
