@@ -1,5 +1,5 @@
 import React from 'react';
-import { Collapse, InlineField, Input, Select } from '@grafana/ui';
+import { Collapse, InlineField, Input, Select, Switch } from '@grafana/ui';
 import type { TIRuleData } from '../../types';
 import { ThresholdEditor } from './ThresholdEditor';
 import { ShapeMapsEditor, TextMapsEditor, LinkMapsEditor, EventMapsEditor, MapOptionsRow } from './MappingEditor';
@@ -107,6 +107,26 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, onChange }) => {
             value={rule.decimals}
             onChange={(e) => update({ decimals: Number((e.target as HTMLInputElement).value) })}
             width={8}
+          />
+        </InlineField>
+        <InlineField label="Column" tooltip="Table metric column to read (e.g. Value)">
+          <Input
+            value={rule.column}
+            onChange={(e) => update({ column: (e.target as HTMLInputElement).value })}
+            placeholder="Value"
+            width={12}
+          />
+        </InlineField>
+        <InlineField label="Invert" tooltip="Mirror the threshold severity (low values treated as high)">
+          <Switch
+            value={rule.invert}
+            onChange={(e) => update({ invert: (e.target as HTMLInputElement).checked })}
+          />
+        </InlineField>
+        <InlineField label="Hidden" tooltip="Disable this rule without deleting it">
+          <Switch
+            value={rule.hidden}
+            onChange={(e) => update({ hidden: (e.target as HTMLInputElement).checked })}
           />
         </InlineField>
       </Collapse>
