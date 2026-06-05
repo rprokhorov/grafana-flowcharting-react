@@ -183,6 +183,9 @@ adding or removing tests.
 
 ### End-to-end (Playwright)
 
+Human-readable test cases (steps + expected results, including ones not yet
+automated) live in [e2e/TEST-CASES.md](e2e/TEST-CASES.md).
+
 | Test plan | Spec | What it asserts |
 |---|---|---|
 | Panel smoke | `e2e/panel.spec.ts` | "FlowCharting React" is selectable as a visualization; panel mounts (`.fc-panel-wrapper`) with no panel error |
