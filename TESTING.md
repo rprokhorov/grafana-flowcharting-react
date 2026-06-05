@@ -113,6 +113,22 @@ test('my scenario', async ({ panelEditPage, page }) => {
 `panelEditPage` already handles login → new dashboard → add panel → pick
 datasource, so those steps don't need their own code.
 
+### The shared test diagram
+
+`e2e/fixtures/тестовая схема.drawio` is the canonical diagram used across e2e
+tests (a Kubernetes topology: ingress → service → 3 pods). Read it through the
+helper in `e2e/fixtures.ts` rather than re-reading the file directly:
+
+```ts
+import { testDiagramXml, readFixture } from './fixtures';
+
+const xml = testDiagramXml();              // the shared diagram as a string
+const other = readFixture('my-other.xml'); // any fixture by name
+```
+
+Add new fixtures to `e2e/fixtures/` and reuse the shared diagram where possible
+so tests stay consistent.
+
 ---
 
 ## Test coverage
@@ -135,7 +151,7 @@ adding or removing tests.
 | Test plan | Spec | What it asserts |
 |---|---|---|
 | Panel smoke | `e2e/panel.spec.ts` | "FlowCharting React" is selectable as a visualization; panel mounts (`.fc-panel-wrapper`) with no panel error |
-| Add diagram via XML | `e2e/add-diagram-xml.spec.ts` | Paste a Kubernetes draw.io XML into the Flowcharts editor → the diagram renders as SVG (>3 path nodes, i.e. stencils loaded) with no panel error |
+| Add diagram via XML | `e2e/add-diagram-xml.spec.ts` | Paste the shared test diagram's XML (`e2e/fixtures/тестовая схема.drawio`) into the Flowcharts editor → the diagram renders as SVG (>3 path nodes, i.e. stencils loaded) with no panel error |
 
 ### Not yet covered
 

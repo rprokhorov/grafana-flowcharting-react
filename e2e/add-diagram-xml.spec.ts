@@ -1,6 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { test, expect } from '@grafana/plugin-e2e';
+import { testDiagramXml } from './fixtures';
 
 // Test plan: "Add a draw.io diagram via XML"
 //   1. Log in to Grafana            (handled by the plugin-e2e auth fixture)
@@ -13,10 +12,7 @@ import { test, expect } from '@grafana/plugin-e2e';
 // The XML is a Kubernetes topology (ingress → service → 3 pods) that exercises
 // the mxgraph.kubernetes stencil loader.
 
-const DIAGRAM_XML = readFileSync(
-  join(__dirname, 'fixtures', 'kubernetes-diagram.xml'),
-  'utf8'
-);
+const DIAGRAM_XML = testDiagramXml();
 
 test('add a draw.io diagram via XML', async ({ panelEditPage, page }) => {
   // Steps 1–4: the panelEditPage fixture lands us on a fresh panel editor of a
