@@ -37,6 +37,8 @@ type ScenarioOpts = {
   rangeData?: TRangeMapData[];
   /** Render two copies of the shared diagram (for the navigator). */
   twoFlowcharts?: boolean;
+  /** Use a CSV-source flowchart with this content instead of the XML diagram. */
+  csv?: string;
 };
 
 /** Build panel options: the shared diagram + one rule on the ingress cell. */
@@ -44,9 +46,15 @@ function buildOptions(s: ScenarioOpts): FlowChartingOptions {
   const options = getDefaultOptions();
 
   const base = { ...options.flowchartsData.flowcharts[0], name: 'K8s', xml: testDiagramXml() };
-  options.flowchartsData.flowcharts = s.twoFlowcharts
-    ? [base, { ...base, name: 'K8s-2' }]
-    : [base];
+  if (s.csv !== undefined) {
+    options.flowchartsData.flowcharts = [
+      { ...base, name: 'CSV', type: 'csv', xml: '', csv: s.csv },
+    ];
+  } else {
+    options.flowchartsData.flowcharts = s.twoFlowcharts
+      ? [base, { ...base, name: 'K8s-2' }]
+      : [base];
+  }
 
   const rule = options.rulesData.rulesData[0];
   rule.alias = 'ingress-status';
@@ -163,6 +171,20 @@ writeDashboard('fc-unit', 'FC e2e — unit & decimals', {
 writeDashboard('fc-tooltip', 'FC e2e — tooltip', {
   values: [10, 40, 90],
   shapeMaps: [{ pattern: '/.*/', hidden: false, style: 'fillColor', colorOn: 'a' }],
+});
+
+// ── B. CSV source ───────────────────────────────────────────────────────────
+// A CSV-source flowchart: three nodes connected to a shared "svc" group.
+writeDashboard('fc-csv', 'FC e2e — csv source', {
+  values: [90],
+  csv: [
+    '# style: whiteSpace=wrap;html=1;rounded=0;',
+    '# connect: {"from":"group","to":"name"}',
+    'name,group',
+    'svc,',
+    'pod-a,svc',
+    'pod-b,svc',
+  ].join('\n'),
 });
 
 // ── I. Navigator ────────────────────────────────────────────────────────────

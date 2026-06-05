@@ -336,8 +336,13 @@ export class XGraph {
         this._initFonts();
         this._graph.updateCssTransform?.();
         this._graph.selectUnlockedLayer?.();
+      } else if (this._type === 'csv') {
+        this._graph.model.clear();
+        this._graph.view.scale = 1;
+        this._importCsv(this._csvGraph);
+        this._graph.updateCssTransform?.();
+        this._graph.selectUnlockedLayer?.();
       }
-      // CSV import would go here if needed
     } catch (e) {
       // Do NOT rethrow — mxGraph may fail on first render when custom stencils
       // (kubernetes, aws, etc.) are still loading asynchronously. The shapes will
@@ -383,6 +388,104 @@ export class XGraph {
         continue;
       }
       this.xcells.push(XCell.refactore(this._graph, mxcell));
+    }
+  }
+
+  /**
+   * Minimal draw.io-style CSV import. Supports:
+   *   # comment / config lines (only `style`, `connect`, `width`, `height` read)
+   *   a header row of column names
+   *   one row per node (first column is the label / id unless `# label:` given)
+   * Nodes are laid out on a grid; `# connect: {"from":"col","to":"col"}` lines
+   * create edges between rows by matching column values.
+   */
+  private _importCsv(csv: string): void {
+    const lines = csv.split('\n').map((l) => l.replace(/\r$/, ''));
+    let style = 'whiteSpace=wrap;html=1;rounded=0;';
+    let width = 120;
+    let height = 40;
+    let labelCol: string | null = null;
+    let identityCol: string | null = null;
+    const connects: Array<{ from: string; to: string; style?: string }> = [];
+
+    const dataLines: string[] = [];
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (line === '') {
+        continue;
+      }
+      if (line.startsWith('#')) {
+        const body = line.slice(1).trim();
+        const sep = body.indexOf(':');
+        if (sep === -1) {
+          continue;
+        }
+        const key = body.slice(0, sep).trim();
+        const val = body.slice(sep + 1).trim();
+        if (key === 'style') style = val;
+        else if (key === 'width') width = Number(val) || width;
+        else if (key === 'height') height = Number(val) || height;
+        else if (key === 'label') labelCol = val.replace(/[%]/g, '');
+        else if (key === 'identity') identityCol = val;
+        else if (key === 'connect') {
+          try {
+            connects.push(JSON.parse(val));
+          } catch {
+            /* ignore malformed connect */
+          }
+        }
+        continue;
+      }
+      dataLines.push(raw);
+    }
+
+    if (dataLines.length === 0) {
+      return;
+    }
+
+    const parseRow = (l: string): string[] => l.split(',').map((c) => c.trim());
+    const header = parseRow(dataLines[0]);
+    const rows = dataLines.slice(1).map(parseRow);
+
+    const labelIdx = labelCol ? header.indexOf(labelCol) : 0;
+    const idIdx = identityCol ? header.indexOf(identityCol) : -1;
+
+    const parent = this._graph.getDefaultParent();
+    const perRow = Math.ceil(Math.sqrt(rows.length)) || 1;
+    const gapX = width + 40;
+    const gapY = height + 40;
+
+    // Map an identity-column value → created vertex, for connect resolution.
+    const vertexByKey = new Map<string, any>();
+    const vertices: any[] = [];
+
+    rows.forEach((cols, i) => {
+      const label = cols[labelIdx >= 0 ? labelIdx : 0] ?? '';
+      const x = (i % perRow) * gapX;
+      const y = Math.floor(i / perRow) * gapY;
+      const v = this._graph.insertVertex(parent, null, label, x, y, width, height, style);
+      vertices.push(v);
+      if (idIdx >= 0 && cols[idIdx]) {
+        vertexByKey.set(cols[idIdx], v);
+      }
+      header.forEach((h, c) => {
+        vertexByKey.set(`${h}=${cols[c]}`, v);
+      });
+    });
+
+    for (const conn of connects) {
+      const fromIdx = header.indexOf(conn.from);
+      const toIdx = header.indexOf(conn.to);
+      if (fromIdx === -1 || toIdx === -1) {
+        continue;
+      }
+      rows.forEach((cols, i) => {
+        const target = vertexByKey.get(`${conn.to}=${cols[fromIdx]}`);
+        const source = vertices[i];
+        if (source && target && source !== target) {
+          this._graph.insertEdge(parent, null, '', source, target, conn.style ?? '');
+        }
+      });
     }
   }
 

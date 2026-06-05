@@ -126,14 +126,25 @@ export const FlowchartsEditor: React.FC<Props> = ({ value, onChange }) => {
                   width={10}
                 />
               </InlineField>
-              <InlineField label="XML" grow>
-                <TextArea
-                  value={fc.xml}
-                  onChange={(e) => updateFlowchart(index, { xml: (e.target as HTMLTextAreaElement).value })}
-                  rows={6}
-                  placeholder="Paste draw.io XML here or use the Edit button"
-                />
-              </InlineField>
+              {fc.type === 'csv' ? (
+                <InlineField label="CSV" grow>
+                  <TextArea
+                    value={fc.csv}
+                    onChange={(e) => updateFlowchart(index, { csv: (e.target as HTMLTextAreaElement).value })}
+                    rows={6}
+                    placeholder={'# style: whiteSpace=wrap;html=1;\nname,group\nPod A,svc\nPod B,svc'}
+                  />
+                </InlineField>
+              ) : (
+                <InlineField label="XML" grow>
+                  <TextArea
+                    value={fc.xml}
+                    onChange={(e) => updateFlowchart(index, { xml: (e.target as HTMLTextAreaElement).value })}
+                    rows={6}
+                    placeholder="Paste draw.io XML here or use the Edit button"
+                  />
+                </InlineField>
+              )}
               <InlineField label="Zoom">
                 <Input
                   value={fc.zoom}
