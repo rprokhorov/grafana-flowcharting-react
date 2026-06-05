@@ -10,7 +10,8 @@
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed",
-    "e2e:debug": "playwright test --debug"
+    "e2e:debug": "playwright test --debug",
+    "e2e:gen-dashboard": "ts-node --compiler-options '{\"module\":\"commonjs\"}' e2e/gen-dashboard.ts"
   },
   "author": "FlowCharting Contributors",
   "license": "Apache-2.0",
@@ -37,6 +38,7 @@
     "style-loader": "^4.0.0",
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.5.4",
+    "ts-node": "^10.9.2",
     "typescript": "^5.2.0",
     "webpack": "^5.105.4",
     "webpack-cli": "^7.0.2"

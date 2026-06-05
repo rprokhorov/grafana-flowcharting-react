@@ -48,10 +48,15 @@ To create it from scratch:
 npm run build
 docker run -d --name grafana-fc -p 3000:3000 \
   -v "$(pwd)/dist":/var/lib/grafana/plugins/flowcharting-react-panel \
+  -v "$(pwd)/provisioning":/etc/grafana/provisioning \
   -e GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=flowcharting-react-panel \
   -e GF_DEFAULT_APP_MODE=development \
   grafana/grafana:10.4.0
 ```
+
+The `provisioning/` mount is what makes the provisioned dashboard + TestData
+datasource available to the e2e tests (see "Provisioned dashboards" below). If
+you created the container earlier without it, recreate it with the command above.
 
 Grafana comes up on http://localhost:3000 (admin / admin). Credentials and URL
 are read from `.env` (gitignored); override with `GRAFANA_URL`,
@@ -113,6 +118,36 @@ test('my scenario', async ({ panelEditPage, page }) => {
 `panelEditPage` already handles login → new dashboard → add panel → pick
 datasource, so those steps don't need their own code.
 
+### Provisioned dashboards
+
+For tests that need fixed panel options + data (e.g. asserting a rule recolors a
+cell), provisioning is more robust than clicking through the editor. Files live
+under `provisioning/` and are mounted into the container at
+`/etc/grafana/provisioning`:
+
+```
+provisioning/
+├── datasources/testdata.yaml      # TestData datasource (uid: testdata)
+└── dashboards/
+    ├── dashboards.yaml            # file provider
+    └── rule-color.json            # generated — panel + rule + csv data
+```
+
+`rule-color.json` is **generated** from the plugin's own defaults so its option
+shape always matches the panel. Regenerate it after changing `src/defaults.ts`
+or the shared diagram:
+
+```bash
+npx ts-node e2e/gen-dashboard.ts
+```
+
+Open a provisioned dashboard in a test via the `gotoDashboardPage` fixture:
+
+```ts
+const dashboardPage = await gotoDashboardPage({ uid: 'fc-rule-color' });
+const panel = dashboardPage.getPanelByTitle('K8s topology');
+```
+
 ### The shared test diagram
 
 `e2e/fixtures/тестовая схема.drawio` is the canonical diagram used across e2e
@@ -152,10 +187,10 @@ adding or removing tests.
 |---|---|---|
 | Panel smoke | `e2e/panel.spec.ts` | "FlowCharting React" is selectable as a visualization; panel mounts (`.fc-panel-wrapper`) with no panel error |
 | Add diagram via XML | `e2e/add-diagram-xml.spec.ts` | Paste the shared test diagram's XML (`e2e/fixtures/тестовая схема.drawio`) into the Flowcharts editor → the diagram renders as SVG (>3 path nodes, i.e. stencils loaded) with no panel error |
+| Rule colors a cell | `e2e/rule-colors-cell.spec.ts` | Provisioned dashboard: TestData current value 90 → rule level 2 → shape map paints the ingress cell's fillColor red (`#F2495C`) in the rendered SVG |
 
 ### Not yet covered
 
-- Rules visually recoloring a cell from live metric data (e2e).
 - Flowchart navigator paging between multiple diagrams (e2e).
 - React component tests for `FlowChartNavigator`, `DiagramTooltip`,
   `StatusOverlay`, and the rule editors (`@testing-library/react`).
