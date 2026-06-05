@@ -6,16 +6,20 @@
     "build": "webpack --config webpack.config.js",
     "test": "jest --passWithNoTests",
     "dev": "webpack --config webpack.config.js --watch",
-    "watch": "webpack --config webpack.config.js --watch"
+    "watch": "webpack --config webpack.config.js --watch",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui"
   },
   "author": "FlowCharting Contributors",
   "license": "Apache-2.0",
   "devDependencies": {
     "@grafana/data": "^10.4.0",
+    "@grafana/plugin-e2e": "^3.9.0",
     "@grafana/runtime": "^10.4.0",
     "@grafana/schema": "^10.4.0",
     "@grafana/tsconfig": "^2.0.1",
     "@grafana/ui": "^10.4.0",
+    "@playwright/test": "^1.60.0",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
     "@types/chroma-js": "^3.1.2",
