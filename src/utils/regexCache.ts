@@ -17,7 +17,12 @@ export function compileRegex(pattern: string): RegExp | null {
   let re: RegExp | null;
   try {
     const m = pattern.match(/^\/(.+)\/([gimsuy]*)$/);
-    re = m ? new RegExp(m[1], m[2]) : new RegExp(pattern);
+    // Strip the `g`/`y` flags: a cached RegExp is reused across calls, and
+    // global/sticky regexes advance `lastIndex` on each .test(), which would
+    // make repeated checks of the same value alternate true/false. They make
+    // no difference to a boolean match anyway.
+    const flags = (m ? m[2] : '').replace(/[gy]/g, '');
+    re = m ? new RegExp(m[1], flags) : new RegExp(pattern);
   } catch {
     re = null;
   }
