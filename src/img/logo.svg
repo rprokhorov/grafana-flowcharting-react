@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="FlowCharting React">
+  <rect width="64" height="64" rx="10" fill="#1f60c4"/>
+  <g fill="none" stroke="#ffffff" stroke-width="2.5">
+    <rect x="24" y="8" width="16" height="12" rx="2" fill="#ffffff" fill-opacity="0.15"/>
+    <rect x="8" y="44" width="16" height="12" rx="2" fill="#ffffff" fill-opacity="0.15"/>
+    <rect x="40" y="44" width="16" height="12" rx="2" fill="#ffffff" fill-opacity="0.15"/>
+    <path d="M32 20 V32"/>
+    <path d="M32 32 H16 V44"/>
+    <path d="M32 32 H48 V44"/>
+  </g>
+  <g fill="#73bf69">
+    <circle cx="16" cy="44" r="3"/>
+    <circle cx="48" cy="44" r="3"/>
+    <circle cx="32" cy="20" r="3"/>
+  </g>
+</svg>

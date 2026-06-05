@@ -50,6 +50,8 @@ module.exports = {
       patterns: [
         // Copy draw.io viewer library and all stencils into dist/static/libs/
         { from: 'src/static', to: 'static' },
+        // Plugin logo referenced by plugin.json (img/logo.svg)
+        { from: 'src/img', to: 'img' },
         // Grafana requires plugin.json at the plugin root
         { from: 'plugin.json', to: '.' },
       ],
