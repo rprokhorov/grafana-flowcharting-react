@@ -87,6 +87,25 @@ describe('Rule.getColorForLevel', () => {
   });
 });
 
+describe('Rule date thresholds', () => {
+  it('resolves the level/color for a date >= threshold', () => {
+    const rule = new Rule({
+      ...getDefaultRuleData(),
+      type: 'date',
+      numberTHData: [],
+      dateTHData: [
+        { level: 0, value: '2000-01-01', color: '#73BF69', comparator: 'ge' },
+        { level: 1, value: '2026-01-01', color: '#F2495C', comparator: 'ge' },
+      ],
+    });
+    // A date after 2026-01-01 crosses the level-1 threshold.
+    expect(rule.getThresholdLevel('2026-06-01')).toBe(1);
+    expect(rule.getColorForLevel(1)).toBe('#F2495C');
+    // A date before 2026 only crosses level 0.
+    expect(rule.getThresholdLevel('2010-01-01')).toBe(0);
+  });
+});
+
 describe('Rule.evaluate', () => {
   const makeMetric = (value: number) =>
     ({
