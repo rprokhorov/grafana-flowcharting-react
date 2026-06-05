@@ -60,8 +60,8 @@ export class DrawioEngine {
       throw new Error('parseXml: Unable to decode mxfile wrapper');
     }
 
-    // base64 → binary string
-    data = Buffer.from(data, 'base64').toString('binary');
+    // base64 → binary string (browser-native; no Node Buffer dependency)
+    data = atob(data);
 
     if (data.length > 0) {
       try {
@@ -94,8 +94,15 @@ export class DrawioEngine {
 
     if (data.length > 0) {
       try {
-        const deflated = deflateRaw(data);
-        data = String.fromCharCode(...Array.from(deflated as Uint8Array));
+        const deflated = deflateRaw(data) as Uint8Array;
+        // Build the binary string in chunks — spreading a large Uint8Array into
+        // String.fromCharCode(...) overflows the call stack on big diagrams.
+        let binary = '';
+        const CHUNK = 0x8000;
+        for (let i = 0; i < deflated.length; i += CHUNK) {
+          binary += String.fromCharCode.apply(null, Array.from(deflated.subarray(i, i + CHUNK)));
+        }
+        data = binary;
       } catch (e) {
         console.error('[DrawioEngine] deflateRaw failed', e);
         return '';
@@ -103,7 +110,7 @@ export class DrawioEngine {
     }
 
     try {
-      data = Buffer.from(data, 'binary').toString('base64');
+      data = btoa(data);
     } catch (e) {
       console.error('[DrawioEngine] base64 encode failed', e);
       return '';

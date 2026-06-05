@@ -2,6 +2,7 @@
 // Wraps an individual mxGraph cell (mxCell) with GF-specific logic.
 
 import type { TStyleKeys, TStyleColorKeys, TPropertieKey, TRuleMapOptions } from '../../types';
+import { regexTest } from '../../utils/regexCache';
 
 export interface XCellDefaultValues {
   id: string | null | undefined;
@@ -204,19 +205,11 @@ export class XCell {
         continue;
       }
       if (options.enableRegEx) {
-        try {
-          if (new RegExp(pattern).test(v)) {
-            return true;
-          }
-        } catch {
-          if (v === pattern) {
-            return true;
-          }
-        }
-      } else {
-        if (v === pattern) {
+        if (regexTest(pattern, v)) {
           return true;
         }
+      } else if (v === pattern) {
+        return true;
       }
     }
     return false;

@@ -25,6 +25,7 @@ import { ShapeMap } from './mappings/ShapeMap';
 import { TextMap } from './mappings/TextMap';
 import { LinkMap } from './mappings/LinkMap';
 import { EventMap } from './mappings/EventMap';
+import { regexTest } from '../../utils/regexCache';
 
 export interface RuleEvaluationResult {
   level: number;
@@ -52,15 +53,7 @@ export class Rule {
   // ─── Metric matching ──────────────────────────────────────────────────────────
 
   matchMetric(name: string): boolean {
-    try {
-      // Support /pattern/ syntax (strip surrounding slashes)
-      const p = this.data.pattern;
-      const match = p.match(/^\/(.+)\/([gimsuy]*)$/);
-      const re = match ? new RegExp(match[1], match[2]) : new RegExp(p);
-      return re.test(name);
-    } catch {
-      return name === this.data.pattern;
-    }
+    return regexTest(this.data.pattern, name);
   }
 
   // ─── Threshold evaluation ─────────────────────────────────────────────────────
