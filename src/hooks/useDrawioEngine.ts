@@ -31,6 +31,15 @@ export function useDrawioEngine(): DrawioEngineState {
       (config as any).appSubUrl ??
       '';
 
+    // Allow operators to disable the draw.io CDN stencil fallback for
+    // air-gapped / strict-CSP installs, via the plugin's jsonData or a global.
+    const noCdn =
+      panelCfg?.jsonData?.disableStencilCdn === true ||
+      (globalThis as any).GF_FLOWCHARTING_NO_CDN === true;
+    if (noCdn) {
+      DrawioEngine.cdnFallbackEnabled = false;
+    }
+
     DrawioEngine.init(baseUrl)
       .then(() => setReady(true))
       .catch((err) => {

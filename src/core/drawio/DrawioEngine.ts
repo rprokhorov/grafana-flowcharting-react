@@ -9,6 +9,15 @@ let _libInitialized = false;
 let _loadPromise: Promise<void> | null = null;
 
 export class DrawioEngine {
+  /**
+   * When true (default), a stencil that isn't bundled locally is fetched from
+   * the public draw.io CDN (https://stencils.drawio.com). Set to false for
+   * air-gapped / strict-CSP deployments to keep all requests local — missing
+   * stencils then render as blank placeholders instead of making an outbound
+   * request. Must be set before init().
+   */
+  static cdnFallbackEnabled = true;
+
   // ─── Initialization ─────────────────────────────────────────────────────────
 
   static isInitialized(): boolean {
@@ -265,18 +274,25 @@ export class DrawioEngine {
       const relative = url.slice(localPrefix.length).replace(/^\/+/, '');
       const cdnUrl = `${CDN}/${relative}`;
 
+      const cdnEnabled = DrawioEngine.cdnFallbackEnabled;
+
       if (cb) {
-        // Async mode — try local, fall back to CDN
+        // Async mode — try local, fall back to CDN (if enabled)
         originalLoadStencil(url, (doc: Document | null) => {
           if (doc != null) {
             cb(doc);
+            return;
+          }
+          if (!cdnEnabled) {
+            console.warn(`[DrawioEngine] Stencil not found locally and CDN fallback disabled: ${relative}`);
+            cb(null);
             return;
           }
           console.warn(`[DrawioEngine] Stencil not found locally, trying CDN: ${cdnUrl}`);
           originalLoadStencil(cdnUrl, cb);
         });
       } else {
-        // Synchronous mode — try local, fall back to CDN
+        // Synchronous mode — try local, fall back to CDN (if enabled)
         try {
           const doc = originalLoadStencil(url);
           if (doc != null) {
@@ -284,6 +300,10 @@ export class DrawioEngine {
           }
         } catch {
           // local fetch failed — fall through to CDN
+        }
+        if (!cdnEnabled) {
+          console.warn(`[DrawioEngine] Stencil not found locally and CDN fallback disabled: ${relative}`);
+          return null;
         }
         console.warn(`[DrawioEngine] Stencil not found locally, trying CDN: ${cdnUrl}`);
         try {
