@@ -58,6 +58,6 @@ module.exports = {
     }),
   ],
   optimization: {
-    minimize: false, // Easier to debug; set true for prod
+    minimize: true, // Shrinks module.js (recharts, chroma, etc.) substantially
   },
 };
