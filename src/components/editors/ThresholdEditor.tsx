@@ -43,12 +43,12 @@ export const ThresholdEditor: React.FC<ThresholdEditorProps> = ({
   };
 
   const removeNumberTH = (index: number) => {
-    onChange(
-      type,
-      numberData.filter((_, i) => i !== index),
-      stringData,
-      dateData
-    );
+    // Reindex levels to stay contiguous (0,1,2…) after removal, otherwise the
+    // next add would reuse an existing level or leave a hole.
+    const next = numberData
+      .filter((_, i) => i !== index)
+      .map((th, i) => ({ ...th, level: i }));
+    onChange(type, next, stringData, dateData);
   };
 
   const updateNumberTH = (index: number, patch: Partial<TTHNumberData>) => {
@@ -67,17 +67,37 @@ export const ThresholdEditor: React.FC<ThresholdEditorProps> = ({
   };
 
   const removeStringTH = (index: number) => {
-    onChange(
-      type,
-      numberData,
-      stringData.filter((_, i) => i !== index),
-      dateData
-    );
+    const next = stringData
+      .filter((_, i) => i !== index)
+      .map((th, i) => ({ ...th, level: i }));
+    onChange(type, numberData, next, dateData);
   };
 
   const updateStringTH = (index: number, patch: Partial<TTHStringData>) => {
     const updated = stringData.map((th, i) => (i === index ? { ...th, ...patch } : th));
     onChange(type, numberData, updated, dateData);
+  };
+
+  const addDateTH = () => {
+    const newTH: TTHDateData = {
+      level: dateData.length,
+      value: '',
+      color: '#73BF69',
+      comparator: 'ge',
+    };
+    onChange(type, numberData, stringData, [...dateData, newTH]);
+  };
+
+  const removeDateTH = (index: number) => {
+    const next = dateData
+      .filter((_, i) => i !== index)
+      .map((th, i) => ({ ...th, level: i }));
+    onChange(type, numberData, stringData, next);
+  };
+
+  const updateDateTH = (index: number, patch: Partial<TTHDateData>) => {
+    const updated = dateData.map((th, i) => (i === index ? { ...th, ...patch } : th));
+    onChange(type, numberData, stringData, updated);
   };
 
   return (
@@ -135,6 +155,32 @@ export const ThresholdEditor: React.FC<ThresholdEditorProps> = ({
             </div>
           ))}
           <Button variant="secondary" size="sm" icon="plus" onClick={addStringTH}>
+            Add threshold
+          </Button>
+        </div>
+      )}
+
+      {type === 'date' && (
+        <div>
+          {dateData.map((th, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, alignItems: 'center' }}>
+              <Select
+                options={DATE_COMPARATORS}
+                value={th.comparator}
+                onChange={(v) => updateDateTH(i, { comparator: v.value as any })}
+                width={8}
+              />
+              <Input
+                value={String(th.value)}
+                onChange={(e) => updateDateTH(i, { value: (e.target as HTMLInputElement).value })}
+                width={20}
+                placeholder="2026-01-01 or ISO date"
+              />
+              <ColorPicker color={th.color} onChange={(color) => updateDateTH(i, { color })} />
+              <Button variant="destructive" size="sm" icon="trash-alt" onClick={() => removeDateTH(i)} />
+            </div>
+          ))}
+          <Button variant="secondary" size="sm" icon="plus" onClick={addDateTH}>
             Add threshold
           </Button>
         </div>

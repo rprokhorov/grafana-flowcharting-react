@@ -3,6 +3,7 @@
 import type { PanelData, DataFrame, Field } from '@grafana/data';
 import { FieldType, reduceField, ReducerID } from '@grafana/data';
 import type { TAggregationKeys, TMetricTypeKeys } from '../../types';
+import { regexTest } from '../../utils/regexCache';
 
 export type DataPoint = { x: number; y: number };
 
@@ -270,20 +271,9 @@ export class MetricProcessor {
 
   matchMetrics(pattern: string): IMetric[] {
     const result: IMetric[] = [];
-    try {
-      // Support /pattern/ syntax (strip surrounding slashes)
-      const m = pattern.match(/^\/(.+)\/([gimsuy]*)$/);
-      const re = m ? new RegExp(m[1], m[2]) : new RegExp(pattern);
-      for (const [name, metric] of this._metrics) {
-        if (re.test(name)) {
-          result.push(metric);
-        }
-      }
-    } catch {
-      for (const [name, metric] of this._metrics) {
-        if (name === pattern) {
-          result.push(metric);
-        }
+    for (const [name, metric] of this._metrics) {
+      if (regexTest(pattern, name)) {
+        result.push(metric);
       }
     }
     return result;

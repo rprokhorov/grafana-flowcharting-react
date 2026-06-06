@@ -1,0 +1,170 @@
+{
+  "uid": "fc-csv",
+  "title": "FC e2e — csv source",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "flowcharting-react-panel",
+      "title": "K8s topology",
+      "gridPos": {
+        "h": 12,
+        "w": 18,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-testdata-datasource",
+        "uid": "testdata"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-testdata-datasource",
+            "uid": "testdata"
+          },
+          "scenarioId": "csv_content",
+          "csvContent": "time,value\n2026-01-01T00:00:00Z,90"
+        }
+      ],
+      "options": {
+        "flowchartsData": {
+          "editorUrl": "https://embed.diagrams.net",
+          "editorTheme": "kennedy",
+          "allowDrawio": true,
+          "flowcharts": [
+            {
+              "name": "CSV",
+              "xml": "",
+              "csv": "# style: whiteSpace=wrap;html=1;rounded=0;\n# connect: {\"from\":\"group\",\"to\":\"name\"}\nname,group\nsvc,\npod-a,svc\npod-b,svc",
+              "download": false,
+              "type": "csv",
+              "url": "",
+              "zoom": "100%",
+              "center": true,
+              "scale": true,
+              "lock": true,
+              "enableAnim": true,
+              "tooltip": true,
+              "grid": false,
+              "bgColor": null
+            }
+          ]
+        },
+        "rulesData": {
+          "rulesData": [
+            {
+              "order": 0,
+              "pattern": "/.*/",
+              "metricType": "serie",
+              "alias": "ingress-status",
+              "refId": "A",
+              "column": "Value",
+              "aggregation": "current",
+              "unit": "short",
+              "type": "number",
+              "hidden": false,
+              "decimals": 2,
+              "reduce": true,
+              "dateColumn": "",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "invert": false,
+              "gradient": false,
+              "overlayIcon": false,
+              "tooltip": false,
+              "tooltipLabel": "",
+              "tooltipColors": false,
+              "tooltipOn": "wc",
+              "tpDirection": "v",
+              "tpMetadata": false,
+              "tpGraph": false,
+              "tpGraphSize": "100%",
+              "tpGraphType": "line",
+              "tpGraphLow": null,
+              "tpGraphHigh": null,
+              "tpGraphScale": "linear",
+              "mapsDat": {
+                "shapes": {
+                  "options": {
+                    "identByProp": "id",
+                    "metadata": "",
+                    "enableRegEx": true
+                  },
+                  "dataList": [
+                    {
+                      "pattern": "oG_fwXk9lUamU_ajUwbq-3",
+                      "hidden": false,
+                      "style": "fillColor",
+                      "colorOn": "a"
+                    }
+                  ]
+                },
+                "texts": {
+                  "options": {
+                    "identByProp": "id",
+                    "metadata": "",
+                    "enableRegEx": true
+                  },
+                  "dataList": []
+                },
+                "links": {
+                  "options": {
+                    "identByProp": "id",
+                    "metadata": "",
+                    "enableRegEx": true
+                  },
+                  "dataList": []
+                },
+                "events": {
+                  "options": {
+                    "identByProp": "id",
+                    "metadata": "",
+                    "enableRegEx": true
+                  },
+                  "dataList": []
+                }
+              },
+              "numberTHData": [
+                {
+                  "color": "#73BF69",
+                  "comparator": "ge",
+                  "value": 0,
+                  "level": 0
+                },
+                {
+                  "color": "#FADE2A",
+                  "comparator": "ge",
+                  "value": 50,
+                  "level": 1
+                },
+                {
+                  "color": "#F2495C",
+                  "comparator": "ge",
+                  "value": 80,
+                  "level": 2
+                }
+              ],
+              "stringTHData": [],
+              "dateTHData": [],
+              "mappingType": 1,
+              "valueData": [],
+              "rangeData": [],
+              "sanitize": false,
+              "newRule": false
+            }
+          ]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    }
+  ]
+}

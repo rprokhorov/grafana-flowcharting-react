@@ -9,25 +9,31 @@ export class EventMap {
     this.data = data;
   }
 
-  apply(xgraph: XGraph, xcells: XCell[], value: number | string | null): void {
+  apply(
+    xgraph: XGraph,
+    xcells: XCell[],
+    value: number | string | null,
+    level: number,
+    options: TRuleMapOptions
+  ): void {
     const { pattern, hidden, style, comparator, eventOn, value: threshold } = this.data;
     if (hidden) {
       return;
     }
-    const matchedCells = xcells.filter((x) =>
-      x.match(pattern, {
-        identByProp: 'id',
-        metadata: '',
-        enableRegEx: true,
-      } as TRuleMapOptions)
-    );
+    const matchedCells = xcells.filter((x) => x.match(pattern, options));
 
-    const matches = this._evalComparator(value, comparator, threshold);
+    // The event fires when the comparator matches AND the rule level reaches the
+    // configured eventOn threshold (eventOn <= 0 means "any level").
+    const fires =
+      this._evalComparator(value, comparator, threshold) && level >= (eventOn ?? 0);
 
     for (const xcell of matchedCells) {
-      if (matches) {
-        // Apply numeric style change for animation keys; static otherwise
+      if (fires) {
+        // Apply numeric style change for animation keys; static otherwise.
         xgraph.setAnimStyleCell(xcell, style as any, threshold);
+      } else {
+        // Revert to the cell's default for this style when the event is off.
+        xcell.restoreStyle(style as any);
       }
     }
   }

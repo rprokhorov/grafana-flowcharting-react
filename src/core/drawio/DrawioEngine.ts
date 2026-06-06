@@ -9,6 +9,15 @@ let _libInitialized = false;
 let _loadPromise: Promise<void> | null = null;
 
 export class DrawioEngine {
+  /**
+   * When true (default), a stencil that isn't bundled locally is fetched from
+   * the public draw.io CDN (https://stencils.drawio.com). Set to false for
+   * air-gapped / strict-CSP deployments to keep all requests local — missing
+   * stencils then render as blank placeholders instead of making an outbound
+   * request. Must be set before init().
+   */
+  static cdnFallbackEnabled = true;
+
   // ─── Initialization ─────────────────────────────────────────────────────────
 
   static isInitialized(): boolean {
@@ -60,8 +69,8 @@ export class DrawioEngine {
       throw new Error('parseXml: Unable to decode mxfile wrapper');
     }
 
-    // base64 → binary string
-    data = Buffer.from(data, 'base64').toString('binary');
+    // base64 → binary string (browser-native; no Node Buffer dependency)
+    data = atob(data);
 
     if (data.length > 0) {
       try {
@@ -94,8 +103,15 @@ export class DrawioEngine {
 
     if (data.length > 0) {
       try {
-        const deflated = deflateRaw(data);
-        data = String.fromCharCode(...Array.from(deflated as Uint8Array));
+        const deflated = deflateRaw(data) as Uint8Array;
+        // Build the binary string in chunks — spreading a large Uint8Array into
+        // String.fromCharCode(...) overflows the call stack on big diagrams.
+        let binary = '';
+        const CHUNK = 0x8000;
+        for (let i = 0; i < deflated.length; i += CHUNK) {
+          binary += String.fromCharCode.apply(null, Array.from(deflated.subarray(i, i + CHUNK)));
+        }
+        data = binary;
       } catch (e) {
         console.error('[DrawioEngine] deflateRaw failed', e);
         return '';
@@ -103,7 +119,7 @@ export class DrawioEngine {
     }
 
     try {
-      data = Buffer.from(data, 'binary').toString('base64');
+      data = btoa(data);
     } catch (e) {
       console.error('[DrawioEngine] base64 encode failed', e);
       return '';
@@ -137,21 +153,27 @@ export class DrawioEngine {
   }
 
   static isValidXml(source: string): boolean {
+    let g: any;
     try {
       const div = document.createElement('div');
-      const g = new Graph(div);
+      g = new Graph(div);
       if (DrawioEngine.isEncoded(source)) {
         source = DrawioEngine.decode(source);
       }
       const xmlDoc = mxUtils.parseXml(source);
       const codec = new mxCodec(xmlDoc);
       g.getModel().beginUpdate();
-      codec.decode(xmlDoc.documentElement, g.getModel());
-      g.getModel().endUpdate();
-      g.destroy();
+      try {
+        codec.decode(xmlDoc.documentElement, g.getModel());
+      } finally {
+        g.getModel().endUpdate();
+      }
       return true;
     } catch {
       return false;
+    } finally {
+      // Always tear the temporary graph down, even if decode threw.
+      g?.destroy?.();
     }
   }
 
@@ -252,18 +274,25 @@ export class DrawioEngine {
       const relative = url.slice(localPrefix.length).replace(/^\/+/, '');
       const cdnUrl = `${CDN}/${relative}`;
 
+      const cdnEnabled = DrawioEngine.cdnFallbackEnabled;
+
       if (cb) {
-        // Async mode — try local, fall back to CDN
+        // Async mode — try local, fall back to CDN (if enabled)
         originalLoadStencil(url, (doc: Document | null) => {
           if (doc != null) {
             cb(doc);
+            return;
+          }
+          if (!cdnEnabled) {
+            console.warn(`[DrawioEngine] Stencil not found locally and CDN fallback disabled: ${relative}`);
+            cb(null);
             return;
           }
           console.warn(`[DrawioEngine] Stencil not found locally, trying CDN: ${cdnUrl}`);
           originalLoadStencil(cdnUrl, cb);
         });
       } else {
-        // Synchronous mode — try local, fall back to CDN
+        // Synchronous mode — try local, fall back to CDN (if enabled)
         try {
           const doc = originalLoadStencil(url);
           if (doc != null) {
@@ -271,6 +300,10 @@ export class DrawioEngine {
           }
         } catch {
           // local fetch failed — fall through to CDN
+        }
+        if (!cdnEnabled) {
+          console.warn(`[DrawioEngine] Stencil not found locally and CDN fallback disabled: ${relative}`);
+          return null;
         }
         console.warn(`[DrawioEngine] Stencil not found locally, trying CDN: ${cdnUrl}`);
         try {
@@ -299,10 +332,12 @@ export class DrawioEngine {
       try {
         originalPaint.call(this, c);
       } catch (e: any) {
-        // Silently ignore drawShape errors from missing stencils.
-        // The deferred refresh in XGraph will re-paint once stencils load.
-        if (e?.message?.includes('drawShape') || e?.message?.includes('undefined')) {
-          // Draw a placeholder rectangle so the cell is visible
+        const msg: string = e?.message ?? '';
+        // The expected case: a custom stencil (kubernetes/aws/…) hasn't loaded
+        // yet, so paint hits drawShape on an undefined stencil. Draw a
+        // placeholder; the deferred refresh in XGraph re-paints once it loads.
+        const isMissingStencil = msg.includes('drawShape');
+        if (isMissingStencil) {
           try {
             if (this.bounds) {
               c.begin();
@@ -310,9 +345,19 @@ export class DrawioEngine {
               c.fillAndStroke();
             }
           } catch { /* ignore */ }
-        } else {
-          throw e;
+          return;
         }
+        // Any other paint error is a real bug — log it (so it's not lost) and
+        // still draw a placeholder so one broken shape doesn't blank the whole
+        // diagram, rather than swallowing it silently on a loose 'undefined' match.
+        console.warn('[DrawioEngine] shape paint error:', e);
+        try {
+          if (this.bounds) {
+            c.begin();
+            c.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+            c.fillAndStroke();
+          }
+        } catch { /* ignore */ }
       }
     };
   }

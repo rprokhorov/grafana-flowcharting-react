@@ -2,10 +2,14 @@
 // Wraps an individual mxGraph cell (mxCell) with GF-specific logic.
 
 import type { TStyleKeys, TStyleColorKeys, TPropertieKey, TRuleMapOptions } from '../../types';
+import { regexTest } from '../../utils/regexCache';
 
 export interface XCellDefaultValues {
   id: string | null | undefined;
-  value: string | null | undefined;
+  /** Original raw value (may be a UserObject DOM node) */
+  value: any;
+  /** Original visible label text, extracted from the value */
+  label: string | null | undefined;
   link: string | null | undefined;
   styles: Map<TStyleKeys, any> | undefined;
   dimension: mxGeometry | undefined;
@@ -16,6 +20,8 @@ export class XCell {
   readonly uid: string;
   private readonly _graph: any;
   private _defaultValues: XCellDefaultValues;
+  /** Style keys written by setStyle that were not in the original style. */
+  private _appliedStyleKeys = new Set<TStyleKeys>();
   percent = 100;
 
   constructor(graph: any, mxcell: mxCell) {
@@ -42,7 +48,7 @@ export class XCell {
       return this._defaultValues.id ?? '';
     }
     if (key === 'value') {
-      return this._defaultValues.value ?? '';
+      return this._defaultValues.label ?? '';
     }
     if (key === 'metadata') {
       return '';
@@ -61,32 +67,65 @@ export class XCell {
   // ─── Label ────────────────────────────────────────────────────────────────────
 
   getLabel(): string {
-    return this.mxcell.value ?? '';
+    const value = this.mxcell.value;
+    // draw.io stores labels as DOM nodes (UserObject) when a cell carries
+    // metadata. In that case the visible text lives in the `label` attribute.
+    if (value != null && typeof value === 'object') {
+      return value.getAttribute?.('label') ?? '';
+    }
+    return value ?? '';
   }
 
   setLabel(value: string): void {
+    const current = this.mxcell.value;
+    // Preserve metadata: when the value is a UserObject DOM node, only update
+    // its `label` attribute instead of replacing the whole node (which would
+    // destroy the cell's metadata).
+    if (current != null && typeof current === 'object' && current.setAttribute) {
+      current.setAttribute('label', value);
+      this._graph.getModel().setValue(this.mxcell, current);
+      return;
+    }
     this._graph.getModel().setValue(this.mxcell, value);
   }
 
   restoreLabel(): void {
-    if (this._defaultValues.value !== undefined) {
-      this.setLabel(this._defaultValues.value ?? '');
+    if (this._defaultValues.label !== undefined) {
+      this.setLabel(this._defaultValues.label ?? '');
     }
   }
 
   // ─── Link ─────────────────────────────────────────────────────────────────────
 
   getLink(): string | null {
-    return this.mxcell.value?.getAttribute?.('href') ?? this._defaultValues.link ?? null;
+    const value = this.mxcell.value;
+    if (value != null && typeof value === 'object') {
+      return value.getAttribute?.('link') ?? value.getAttribute?.('href') ?? null;
+    }
+    return this._defaultValues.link ?? null;
   }
 
   setLink(url: string | null): void {
-    // Link is stored in cell metadata/style in mxGraph; simplified implementation
-    this._defaultValues.link = url;
+    // draw.io stores a cell link as the `link` attribute on a UserObject value.
+    // graph.setLinkForCell wraps a plain value in a UserObject and makes the
+    // cell clickable; fall back to setting the attribute directly if it's absent.
+    if (typeof this._graph.setLinkForCell === 'function') {
+      this._graph.setLinkForCell(this.mxcell, url ?? null);
+      return;
+    }
+    const value = this.mxcell.value;
+    if (value != null && typeof value === 'object' && value.setAttribute) {
+      if (url) {
+        value.setAttribute('link', url);
+      } else {
+        value.removeAttribute?.('link');
+      }
+      this._graph.getModel().setValue(this.mxcell, value);
+    }
   }
 
   restoreLink(): void {
-    // No-op for now — links are complex in mxGraph
+    this.setLink(this._defaultValues.link ?? null);
   }
 
   // ─── Style ────────────────────────────────────────────────────────────────────
@@ -99,6 +138,12 @@ export class XCell {
   }
 
   setStyle(key: TStyleKeys, value: string | null): void {
+    // Remember keys that weren't part of the cell's original style so they can
+    // be removed on restore — otherwise a rule that adds e.g. gradientColor
+    // would leave it behind once the rule no longer matches.
+    if (value !== null && !this._defaultValues.styles?.has(key)) {
+      this._appliedStyleKeys.add(key);
+    }
     this._graph.setCellStyles(key, value, [this.mxcell]);
   }
 
@@ -117,11 +162,18 @@ export class XCell {
   }
 
   restoreAllStyles(): void {
+    // Remove any keys a rule added that weren't in the original style.
+    if (this._appliedStyleKeys.size > 0) {
+      this._appliedStyleKeys.forEach((k) => {
+        this._graph.setCellStyles(k, null, [this.mxcell]);
+      });
+      this._appliedStyleKeys.clear();
+    }
     if (!this._defaultValues.styles) {
       return;
     }
     this._defaultValues.styles.forEach((val, k) => {
-      this.setStyle(k, val ?? null);
+      this._graph.setCellStyles(k, val ?? null, [this.mxcell]);
     });
   }
 
@@ -186,19 +238,11 @@ export class XCell {
         continue;
       }
       if (options.enableRegEx) {
-        try {
-          if (new RegExp(pattern).test(v)) {
-            return true;
-          }
-        } catch {
-          if (v === pattern) {
-            return true;
-          }
-        }
-      } else {
-        if (v === pattern) {
+        if (regexTest(pattern, v)) {
           return true;
         }
+      } else if (v === pattern) {
+        return true;
       }
     }
     return false;
@@ -239,10 +283,21 @@ export class XCell {
 
     const geo: mxGeometry | undefined = this._graph?.getCellGeometry?.(this.mxcell) ?? undefined;
 
+    const rawValue = this.mxcell.value ?? null;
+    const label =
+      rawValue != null && typeof rawValue === 'object'
+        ? rawValue.getAttribute?.('label') ?? ''
+        : rawValue;
+    const link =
+      rawValue != null && typeof rawValue === 'object'
+        ? rawValue.getAttribute?.('link') ?? null
+        : null;
+
     return {
       id: this.mxcell.id ?? null,
-      value: this.mxcell.value ?? null,
-      link: null,
+      value: rawValue,
+      label,
+      link,
       styles,
       dimension: geo ? { x: geo.x, y: geo.y, width: geo.width, height: geo.height } : undefined,
     };

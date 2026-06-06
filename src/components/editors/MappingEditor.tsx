@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Input, Select } from '@grafana/ui';
-import type { TShapeMapData, TTextMapData, TLinkMapData, TEventMapData } from '../../types';
+import { Button, InlineField, Input, Select, Switch } from '@grafana/ui';
+import type {
+  TShapeMapData,
+  TTextMapData,
+  TLinkMapData,
+  TEventMapData,
+  TRuleMapOptions,
+  TPropertieKey,
+} from '../../types';
 import { ShapeMap } from '../../core/rules/mappings/ShapeMap';
 import { TextMap } from '../../core/rules/mappings/TextMap';
 import { LinkMap } from '../../core/rules/mappings/LinkMap';
@@ -27,6 +34,29 @@ const STYLE_KEYS = [
   { label: 'strokeColor', value: 'strokeColor' },
   { label: 'fontColor', value: 'fontColor' },
   { label: 'gradientColor', value: 'gradientColor' },
+];
+const TEXT_REPLACE_OPTIONS = [
+  { label: 'Replace all', value: 'content' },
+  { label: 'Replace pattern', value: 'pattern' },
+  { label: 'Append after', value: 'as' },
+  { label: 'Append new line', value: 'anl' },
+];
+const EVENT_STYLE_OPTIONS = [
+  { label: 'opacity', value: 'opacity' },
+  { label: 'fillColor', value: 'fillColor' },
+  { label: 'strokeColor', value: 'strokeColor' },
+  { label: 'fontColor', value: 'fontColor' },
+  { label: 'visibility', value: 'visibility' },
+  { label: 'blink', value: 'blink' },
+];
+const EVENT_COMPARATOR_OPTIONS = [
+  { label: '<', value: 'lt' },
+  { label: '<=', value: 'le' },
+  { label: '==', value: 'eq' },
+  { label: '!=', value: 'ne' },
+  { label: '>=', value: 'ge' },
+  { label: '>', value: 'gt' },
+  { label: 'always', value: 'al' },
 ];
 
 /**
@@ -62,6 +92,49 @@ function useCellPicker(onPick: (index: number, cellId: string) => void) {
 
   return { pickingIndex, startPick, cancelPick };
 }
+
+// ─── Map match options ──────────────────────────────────────────────────────
+
+const IDENT_BY_OPTIONS: Array<{ label: string; value: TPropertieKey }> = [
+  { label: 'Cell id', value: 'id' },
+  { label: 'Cell value', value: 'value' },
+  { label: 'Metadata', value: 'metadata' },
+];
+
+interface MapOptionsRowProps {
+  options: TRuleMapOptions;
+  onChange: (options: TRuleMapOptions) => void;
+}
+
+/** Edits a map group's match options: identify-by prop, metadata key, regex. */
+export const MapOptionsRow: React.FC<MapOptionsRowProps> = ({ options, onChange }) => (
+  <div style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+    <InlineField label="Match by">
+      <Select
+        options={IDENT_BY_OPTIONS}
+        value={options.identByProp}
+        onChange={(v) => onChange({ ...options, identByProp: v.value as TPropertieKey })}
+        width={16}
+      />
+    </InlineField>
+    {options.identByProp === 'metadata' && (
+      <InlineField label="Metadata key">
+        <Input
+          value={options.metadata}
+          onChange={(e) => onChange({ ...options, metadata: (e.target as HTMLInputElement).value })}
+          width={16}
+          placeholder="attribute"
+        />
+      </InlineField>
+    )}
+    <InlineField label="Regex">
+      <Switch
+        value={options.enableRegEx}
+        onChange={(e) => onChange({ ...options, enableRegEx: (e.target as HTMLInputElement).checked })}
+      />
+    </InlineField>
+  </div>
+);
 
 // ─── Shape Maps ───────────────────────────────────────────────────────────────
 
@@ -141,6 +214,10 @@ export const TextMapsEditor: React.FC<TextMapsEditorProps> = ({ data, onChange }
             title="Click to pick a cell from the diagram"
             onClick={() => pickingIndex === i ? cancelPick() : startPick(i)}
           />
+          <Select options={TEXT_REPLACE_OPTIONS} value={item.textReplace} onChange={(v) => update(i, { textReplace: v.value as any })} width={16} />
+          {item.textReplace === 'pattern' && (
+            <Input value={item.textPattern} onChange={(e) => update(i, { textPattern: (e.target as HTMLInputElement).value })} placeholder="regex" width={12} />
+          )}
           <Select options={TEXT_ON_OPTIONS} value={item.textOn} onChange={(v) => update(i, { textOn: v.value as any })} width={14} />
           <Button variant="destructive" size="sm" icon="trash-alt" onClick={() => remove(i)} />
         </div>
@@ -228,6 +305,8 @@ export const EventMapsEditor: React.FC<EventMapsEditorProps> = ({ data, onChange
             title="Click to pick a cell from the diagram"
             onClick={() => pickingIndex === i ? cancelPick() : startPick(i)}
           />
+          <Select options={EVENT_STYLE_OPTIONS} value={item.style} onChange={(v) => update(i, { style: v.value as any })} width={12} />
+          <Select options={EVENT_COMPARATOR_OPTIONS} value={item.comparator} onChange={(v) => update(i, { comparator: v.value as any })} width={10} />
           <Input value={item.value} onChange={(e) => update(i, { value: (e.target as HTMLInputElement).value })} placeholder="value" width={10} />
           <Button variant="destructive" size="sm" icon="trash-alt" onClick={() => remove(i)} />
         </div>

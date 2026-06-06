@@ -35,11 +35,18 @@ export class XGraph {
   private _center = true;
   private _animation = true;
   private _grid = false;
+  private _bgColor: string | null = null;
   private _zoomPercent = '100%';
   private _cumulativeZoomFactor = 1;
   xcells: XCell[] = [];
   private _onCellHover?: CellHoverCallback;
   private _onCellHoverEnd?: CellHoverEndCallback;
+  private _keydownHandler?: (evt: KeyboardEvent) => void;
+  private _contextMenuHandler?: (evt: Event) => void;
+  /** Pending setTimeout ids (stencil refresh, animations) cleared on free(). */
+  private _timers = new Set<ReturnType<typeof setTimeout>>();
+  /** Called when a deferred stencil refresh first creates xcells. */
+  private _onStencilRefresh?: () => void;
 
   constructor(container: HTMLDivElement, type: TSourceTypeKeys, definition: string, options?: XGraphOptions) {
     this.container = container;
@@ -104,24 +111,51 @@ export class XGraph {
       try {
         this._graph.refresh();
         this._updateOptions();
-        // Re-init xcells in case the first attempt failed
+        // Re-init xcells in case the first attempt failed (stencils that were
+        // still loading have now registered their shapes). If this produces
+        // cells that weren't there before, the consumer needs to re-apply rules
+        // so the freshly-created cells get their styling.
         if (this.xcells.length === 0) {
           this._initXCells();
+          if (this.xcells.length > 0) {
+            this._onStencilRefresh?.();
+          }
         }
       } catch (e) {
         console.warn('[XGraph] deferred refresh error:', e);
       }
     };
-    setTimeout(doRefresh, 500);
-    setTimeout(doRefresh, 2000);
+    this._setTimeout(doRefresh, 500);
+    this._setTimeout(doRefresh, 2000);
   }
 
   isInitialized(): boolean {
     return this._isInitialized;
   }
 
+  /** Schedule a timeout whose id is tracked so free() can cancel it. */
+  private _setTimeout(fn: () => void, ms: number): void {
+    const id = setTimeout(() => {
+      this._timers.delete(id);
+      fn();
+    }, ms);
+    this._timers.add(id);
+  }
+
   /** Destroy graph — call in React cleanup / useEffect return. */
   free(): void {
+    for (const id of this._timers) {
+      clearTimeout(id);
+    }
+    this._timers.clear();
+    if (this._keydownHandler) {
+      document.removeEventListener('keydown', this._keydownHandler);
+      this._keydownHandler = undefined;
+    }
+    if (this._contextMenuHandler) {
+      this.container.removeEventListener('contextmenu', this._contextMenuHandler);
+      this._contextMenuHandler = undefined;
+    }
     this._graph?.destroy();
     this._graph = undefined;
     this._isInitialized = false;
@@ -142,6 +176,11 @@ export class XGraph {
   setHoverCallbacks(onHover: CellHoverCallback, onHoverEnd: CellHoverEndCallback): void {
     this._onCellHover = onHover;
     this._onCellHoverEnd = onHoverEnd;
+  }
+
+  /** Register a callback fired when a deferred stencil refresh creates xcells. */
+  setOnStencilRefresh(cb: () => void): void {
+    this._onStencilRefresh = cb;
   }
 
   // ─── Cell access ──────────────────────────────────────────────────────────────
@@ -181,7 +220,7 @@ export class XGraph {
           const steps = chroma.scale([startColor, color]).mode('lrgb').colors(GFCONSTANT.CONF_COLORS_STEPS + 1);
           const ms = GFCONSTANT.CONF_COLORS_MS;
           for (let i = 1; i < steps.length; i++) {
-            setTimeout(() => xcell.setStyle(style, steps[i]), ms * i);
+            this._setTimeout(() => xcell.setStyle(style, steps[i]), ms * i);
           }
           return;
         }
@@ -207,7 +246,7 @@ export class XGraph {
         const steps = XGraph._interpolate(begin, end, GFCONSTANT.CONF_ANIMS_STEP);
         const ms = GFCONSTANT.CONF_ANIMS_MS;
         for (let i = 1; i < steps.length; i++) {
-          setTimeout(() => xcell.setStyle(style as any, steps[i].toString()), ms * i);
+          this._setTimeout(() => xcell.setStyle(style as any, steps[i].toString()), ms * i);
         }
         return;
       }
@@ -253,15 +292,19 @@ export class XGraph {
       this.container
     );
 
-    // Escape key resets zoom
-    mxEvent.addListener(document, 'keydown', (evt: KeyboardEvent) => {
+    // Escape key resets zoom. Stored so it can be removed in free() — otherwise
+    // every panel mount leaks a document-level listener and Escape would reset
+    // all FlowCharting panels on the dashboard at once.
+    this._keydownHandler = (evt: KeyboardEvent) => {
       if (!mxEvent.isConsumed(evt) && evt.keyCode === 27) {
         this.refresh();
       }
-    });
+    };
+    document.addEventListener('keydown', this._keydownHandler);
 
     // Prevent context menu
-    this.container.addEventListener('contextmenu', (e) => e.preventDefault());
+    this._contextMenuHandler = (e: Event) => e.preventDefault();
+    this.container.addEventListener('contextmenu', this._contextMenuHandler);
   }
 
   /**
@@ -293,8 +336,13 @@ export class XGraph {
         this._initFonts();
         this._graph.updateCssTransform?.();
         this._graph.selectUnlockedLayer?.();
+      } else if (this._type === 'csv') {
+        this._graph.model.clear();
+        this._graph.view.scale = 1;
+        this._importCsv(this._csvGraph);
+        this._graph.updateCssTransform?.();
+        this._graph.selectUnlockedLayer?.();
       }
-      // CSV import would go here if needed
     } catch (e) {
       // Do NOT rethrow — mxGraph may fail on first render when custom stencils
       // (kubernetes, aws, etc.) are still loading asynchronously. The shapes will
@@ -343,6 +391,104 @@ export class XGraph {
     }
   }
 
+  /**
+   * Minimal draw.io-style CSV import. Supports:
+   *   # comment / config lines (only `style`, `connect`, `width`, `height` read)
+   *   a header row of column names
+   *   one row per node (first column is the label / id unless `# label:` given)
+   * Nodes are laid out on a grid; `# connect: {"from":"col","to":"col"}` lines
+   * create edges between rows by matching column values.
+   */
+  private _importCsv(csv: string): void {
+    const lines = csv.split('\n').map((l) => l.replace(/\r$/, ''));
+    let style = 'whiteSpace=wrap;html=1;rounded=0;';
+    let width = 120;
+    let height = 40;
+    let labelCol: string | null = null;
+    let identityCol: string | null = null;
+    const connects: Array<{ from: string; to: string; style?: string }> = [];
+
+    const dataLines: string[] = [];
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (line === '') {
+        continue;
+      }
+      if (line.startsWith('#')) {
+        const body = line.slice(1).trim();
+        const sep = body.indexOf(':');
+        if (sep === -1) {
+          continue;
+        }
+        const key = body.slice(0, sep).trim();
+        const val = body.slice(sep + 1).trim();
+        if (key === 'style') style = val;
+        else if (key === 'width') width = Number(val) || width;
+        else if (key === 'height') height = Number(val) || height;
+        else if (key === 'label') labelCol = val.replace(/[%]/g, '');
+        else if (key === 'identity') identityCol = val;
+        else if (key === 'connect') {
+          try {
+            connects.push(JSON.parse(val));
+          } catch {
+            /* ignore malformed connect */
+          }
+        }
+        continue;
+      }
+      dataLines.push(raw);
+    }
+
+    if (dataLines.length === 0) {
+      return;
+    }
+
+    const parseRow = (l: string): string[] => l.split(',').map((c) => c.trim());
+    const header = parseRow(dataLines[0]);
+    const rows = dataLines.slice(1).map(parseRow);
+
+    const labelIdx = labelCol ? header.indexOf(labelCol) : 0;
+    const idIdx = identityCol ? header.indexOf(identityCol) : -1;
+
+    const parent = this._graph.getDefaultParent();
+    const perRow = Math.ceil(Math.sqrt(rows.length)) || 1;
+    const gapX = width + 40;
+    const gapY = height + 40;
+
+    // Map an identity-column value → created vertex, for connect resolution.
+    const vertexByKey = new Map<string, any>();
+    const vertices: any[] = [];
+
+    rows.forEach((cols, i) => {
+      const label = cols[labelIdx >= 0 ? labelIdx : 0] ?? '';
+      const x = (i % perRow) * gapX;
+      const y = Math.floor(i / perRow) * gapY;
+      const v = this._graph.insertVertex(parent, null, label, x, y, width, height, style);
+      vertices.push(v);
+      if (idIdx >= 0 && cols[idIdx]) {
+        vertexByKey.set(cols[idIdx], v);
+      }
+      header.forEach((h, c) => {
+        vertexByKey.set(`${h}=${cols[c]}`, v);
+      });
+    });
+
+    for (const conn of connects) {
+      const fromIdx = header.indexOf(conn.from);
+      const toIdx = header.indexOf(conn.to);
+      if (fromIdx === -1 || toIdx === -1) {
+        continue;
+      }
+      rows.forEach((cols, i) => {
+        const target = vertexByKey.get(`${conn.to}=${cols[fromIdx]}`);
+        const source = vertices[i];
+        if (source && target && source !== target) {
+          this._graph.insertEdge(parent, null, '', source, target, conn.style ?? '');
+        }
+      });
+    }
+  }
+
   private _initFonts(): void {
     if (!this._graph) {
       return;
@@ -377,8 +523,9 @@ export class XGraph {
     this.container.style.backgroundImage = this._grid
       ? "url('data:image/gif;base64,R0lGODlhCgAKAJEAAAAAAP///8zMzP///yH5BAEAAAMALAAAAAAKAAoAAAIJ1I6py+0Po2wFADs=')"
       : '';
-    // Background color
-    this.container.style.backgroundColor = this._graph.background ?? '';
+    // Background color — the panel-configured bgColor takes precedence over the
+    // diagram's own mxGraph background.
+    this.container.style.backgroundColor = this._bgColor ?? this._graph.background ?? '';
     // Scale / center / zoom
     if (this._scale) {
       if (this._center) {
@@ -396,15 +543,22 @@ export class XGraph {
     const margin = 2;
     const max = 3;
     const bounds = this._graph.getGraphBounds();
+    const viewScale = this._graph.view.scale || 1;
     const cw = this._graph.container.clientWidth - margin;
     const ch = this._graph.container.clientHeight - margin;
-    const w = bounds.width / this._graph.view.scale;
-    const h = bounds.height / this._graph.view.scale;
+    const w = bounds.width / viewScale;
+    const h = bounds.height / viewScale;
+    // Guard against an empty diagram or an unmeasured (zero-size) container —
+    // dividing by zero would feed NaN/Infinity into scaleAndTranslate.
+    if (w <= 0 || h <= 0 || cw <= 0 || ch <= 0) {
+      this._graph.zoomActual();
+      return;
+    }
     const s = Math.min(max, Math.min(cw / w, ch / h));
     this._graph.view.scaleAndTranslate(
       s,
-      (margin + cw - w * s) / (2 * s) - bounds.x / this._graph.view.scale,
-      (margin + ch - h * s) / (2 * s) - bounds.y / this._graph.view.scale
+      (margin + cw - w * s) / (2 * s) - bounds.x / viewScale,
+      (margin + ch - h * s) / (2 * s) - bounds.y / viewScale
     );
   }
 
@@ -418,19 +572,21 @@ export class XGraph {
     }
   }
 
-  private _zoomPointer(factor: number, offsetX: number, offsetY: number): void {
+  private _zoomPointer(_factor: number, offsetX: number, offsetY: number): void {
     let dx = offsetX * 2;
     let dy = offsetY * 2;
-    factor = Math.max(0.01, Math.min(this._graph.view.scale * factor, 160)) / this._graph.view.scale;
-    factor = this._cumulativeZoomFactor / this._graph.view.scale;
-    const scale = Math.round(this._graph.view.scale * factor * 100) / 100;
-    factor = scale / this._graph.view.scale;
+    const viewScale = this._graph.view.scale || 1;
+    // Target scale comes from the accumulated wheel factor, clamped to a sane
+    // range so the diagram can't be zoomed to nothing or to absurd magnification.
+    const target = Math.max(0.01, Math.min(this._cumulativeZoomFactor, 160));
+    const scale = Math.round(target * 100) / 100;
+    const factor = scale / viewScale;
     if (factor > 1) {
       const f = (factor - 1) / (scale * 2);
       dx *= -f;
       dy *= -f;
     } else {
-      const f = (1 / factor - 1) / (this._graph.view.scale * 2);
+      const f = (1 / factor - 1) / (viewScale * 2);
       dx *= f;
       dy *= f;
     }
@@ -490,6 +646,9 @@ export class XGraph {
     }
     if (options.grid !== undefined) {
       this._grid = options.grid;
+    }
+    if (options.bgColor !== undefined) {
+      this._bgColor = options.bgColor;
     }
   }
 

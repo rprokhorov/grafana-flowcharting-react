@@ -1,0 +1,170 @@
+{
+  "uid": "fc-th-yellow",
+  "title": "FC e2e — level 1 yellow",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "flowcharting-react-panel",
+      "title": "K8s topology",
+      "gridPos": {
+        "h": 12,
+        "w": 18,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-testdata-datasource",
+        "uid": "testdata"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-testdata-datasource",
+            "uid": "testdata"
+          },
+          "scenarioId": "csv_content",
+          "csvContent": "time,value\n2026-01-01T00:00:00Z,50"
+        }
+      ],
+      "options": {
+        "flowchartsData": {
+          "editorUrl": "https://embed.diagrams.net",
+          "editorTheme": "kennedy",
+          "allowDrawio": true,
+          "flowcharts": [
+            {
+              "name": "K8s",
+              "xml": "<mxfile host=\"Electron\" modified=\"2026-03-20T21:53:55.047Z\" agent=\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.6.5 Chrome/114.0.5735.243 Electron/25.3.1 Safari/537.36\" etag=\"isZP2H792OjbNUGSSXOQ\" version=\"21.6.5\" type=\"device\">\n  <diagram name=\"Страница 1\" id=\"rZLJp3sg5ZQrBgQbpcl5\">\n    <mxGraphModel dx=\"1434\" dy=\"854\" grid=\"1\" gridSize=\"10\" guides=\"1\" tooltips=\"1\" connect=\"1\" arrows=\"1\" fold=\"1\" page=\"1\" pageScale=\"1\" pageWidth=\"827\" pageHeight=\"1169\" math=\"0\" shadow=\"0\">\n      <root>\n        <mxCell id=\"0\" />\n        <mxCell id=\"1\" parent=\"0\" />\n        <mxCell id=\"oG_fwXk9lUamU_ajUwbq-9\" style=\"edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;\" edge=\"1\" parent=\"1\" source=\"oG_fwXk9lUamU_ajUwbq-3\" target=\"oG_fwXk9lUamU_ajUwbq-8\">\n          <mxGeometry relative=\"1\" as=\"geometry\" />\n        </mxCell>\n        <mxCell id=\"oG_fwXk9lUamU_ajUwbq-3\" value=\"\" style=\"sketch=0;html=1;dashed=0;whitespace=wrap;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];verticalLabelPosition=bottom;align=center;verticalAlign=top;shape=mxgraph.kubernetes.icon;prIcon=ing\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"188\" y=\"200\" width=\"50\" height=\"48\" as=\"geometry\" />\n        </mxCell>\n        <mxCell id=\"oG_fwXk9lUamU_ajUwbq-4\" value=\"\" style=\"sketch=0;html=1;dashed=0;whitespace=wrap;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];verticalLabelPosition=bottom;align=center;verticalAlign=top;shape=mxgraph.kubernetes.icon;prIcon=pod\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"110\" y=\"420\" width=\"50\" height=\"48\" as=\"geometry\" />\n        </mxCell>\n        <mxCell id=\"oG_fwXk9lUamU_ajUwbq-5\" value=\"\" style=\"sketch=0;html=1;dashed=0;whitespace=wrap;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];verticalLabelPosition=bottom;align=center;verticalAlign=top;shape=mxgraph.kubernetes.icon;prIcon=pod\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"188\" y=\"420\" width=\"50\" height=\"48\" as=\"geometry\" />\n        </mxCell>\n        <mxCell id=\"oG_fwXk9lUamU_ajUwbq-6\" value=\"\" style=\"sketch=0;html=1;dashed=0;whitespace=wrap;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];verticalLabelPosition=bottom;align=center;verticalAlign=top;shape=mxgraph.kubernetes.icon;prIcon=pod\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"270\" y=\"420\" width=\"50\" height=\"48\" as=\"geometry\" />\n        </mxCell>\n        <mxCell id=\"oG_fwXk9lUamU_ajUwbq-10\" style=\"edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;\" edge=\"1\" parent=\"1\" source=\"oG_fwXk9lUamU_ajUwbq-8\" target=\"oG_fwXk9lUamU_ajUwbq-4\">\n          <mxGeometry relative=\"1\" as=\"geometry\" />\n        </mxCell>\n        <mxCell id=\"oG_fwXk9lUamU_ajUwbq-11\" style=\"edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;\" edge=\"1\" parent=\"1\" source=\"oG_fwXk9lUamU_ajUwbq-8\" target=\"oG_fwXk9lUamU_ajUwbq-5\">\n          <mxGeometry relative=\"1\" as=\"geometry\" />\n        </mxCell>\n        <mxCell id=\"oG_fwXk9lUamU_ajUwbq-12\" style=\"edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;\" edge=\"1\" parent=\"1\" source=\"oG_fwXk9lUamU_ajUwbq-8\" target=\"oG_fwXk9lUamU_ajUwbq-6\">\n          <mxGeometry relative=\"1\" as=\"geometry\" />\n        </mxCell>\n        <mxCell id=\"oG_fwXk9lUamU_ajUwbq-8\" value=\"\" style=\"sketch=0;html=1;dashed=0;whitespace=wrap;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];verticalLabelPosition=bottom;align=center;verticalAlign=top;shape=mxgraph.kubernetes.icon;prIcon=svc\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"188\" y=\"320\" width=\"50\" height=\"48\" as=\"geometry\" />\n        </mxCell>\n      </root>\n    </mxGraphModel>\n  </diagram>\n</mxfile>\n",
+              "csv": "",
+              "download": false,
+              "type": "xml",
+              "url": "",
+              "zoom": "100%",
+              "center": true,
+              "scale": true,
+              "lock": true,
+              "enableAnim": true,
+              "tooltip": true,
+              "grid": false,
+              "bgColor": null
+            }
+          ]
+        },
+        "rulesData": {
+          "rulesData": [
+            {
+              "order": 0,
+              "pattern": "/.*/",
+              "metricType": "serie",
+              "alias": "ingress-status",
+              "refId": "A",
+              "column": "Value",
+              "aggregation": "current",
+              "unit": "short",
+              "type": "number",
+              "hidden": false,
+              "decimals": 2,
+              "reduce": true,
+              "dateColumn": "",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "invert": false,
+              "gradient": false,
+              "overlayIcon": false,
+              "tooltip": false,
+              "tooltipLabel": "",
+              "tooltipColors": false,
+              "tooltipOn": "wc",
+              "tpDirection": "v",
+              "tpMetadata": false,
+              "tpGraph": false,
+              "tpGraphSize": "100%",
+              "tpGraphType": "line",
+              "tpGraphLow": null,
+              "tpGraphHigh": null,
+              "tpGraphScale": "linear",
+              "mapsDat": {
+                "shapes": {
+                  "options": {
+                    "identByProp": "id",
+                    "metadata": "",
+                    "enableRegEx": true
+                  },
+                  "dataList": [
+                    {
+                      "pattern": "oG_fwXk9lUamU_ajUwbq-3",
+                      "hidden": false,
+                      "style": "fillColor",
+                      "colorOn": "a"
+                    }
+                  ]
+                },
+                "texts": {
+                  "options": {
+                    "identByProp": "id",
+                    "metadata": "",
+                    "enableRegEx": true
+                  },
+                  "dataList": []
+                },
+                "links": {
+                  "options": {
+                    "identByProp": "id",
+                    "metadata": "",
+                    "enableRegEx": true
+                  },
+                  "dataList": []
+                },
+                "events": {
+                  "options": {
+                    "identByProp": "id",
+                    "metadata": "",
+                    "enableRegEx": true
+                  },
+                  "dataList": []
+                }
+              },
+              "numberTHData": [
+                {
+                  "color": "#73BF69",
+                  "comparator": "ge",
+                  "value": 0,
+                  "level": 0
+                },
+                {
+                  "color": "#FADE2A",
+                  "comparator": "ge",
+                  "value": 50,
+                  "level": 1
+                },
+                {
+                  "color": "#F2495C",
+                  "comparator": "ge",
+                  "value": 80,
+                  "level": 2
+                }
+              ],
+              "stringTHData": [],
+              "dateTHData": [],
+              "mappingType": 1,
+              "valueData": [],
+              "rangeData": [],
+              "sanitize": false,
+              "newRule": false
+            }
+          ]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    }
+  ]
+}

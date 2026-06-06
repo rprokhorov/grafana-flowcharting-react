@@ -8,8 +8,14 @@ import { DrawioEngine } from '../core/drawio/DrawioEngine';
  *
  * Guards against React StrictMode double-invoke via DrawioEngine.isInitialized().
  */
-export function useDrawioEngine(): boolean {
+export interface DrawioEngineState {
+  ready: boolean;
+  error: string | null;
+}
+
+export function useDrawioEngine(): DrawioEngineState {
   const [ready, setReady] = useState(() => DrawioEngine.isInitialized());
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (DrawioEngine.isInitialized()) {
@@ -25,12 +31,22 @@ export function useDrawioEngine(): boolean {
       (config as any).appSubUrl ??
       '';
 
+    // Allow operators to disable the draw.io CDN stencil fallback for
+    // air-gapped / strict-CSP installs, via the plugin's jsonData or a global.
+    const noCdn =
+      panelCfg?.jsonData?.disableStencilCdn === true ||
+      (globalThis as any).GF_FLOWCHARTING_NO_CDN === true;
+    if (noCdn) {
+      DrawioEngine.cdnFallbackEnabled = false;
+    }
+
     DrawioEngine.init(baseUrl)
       .then(() => setReady(true))
       .catch((err) => {
         console.error('[useDrawioEngine] Failed to initialize draw.io engine', err);
+        setError(err?.message ?? String(err));
       });
   }, []);
 
-  return ready;
+  return { ready, error };
 }

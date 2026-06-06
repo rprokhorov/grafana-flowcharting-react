@@ -103,6 +103,9 @@ export const FlowChartRenderer: React.FC<FlowChartRendererProps> = ({
     });
 
     xgraph.setHoverCallbacks(handleCellHover, handleCellHoverEnd);
+    // If a diagram first renders before its stencils finish loading, the cells
+    // appear after a deferred refresh — re-apply rules then so they get styled.
+    xgraph.setOnStencilRefresh(() => applyRules(xgraph));
     xgraphRef.current = xgraph;
 
     xgraph.initGraph()

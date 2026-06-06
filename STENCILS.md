@@ -89,21 +89,34 @@ GF_PLUGIN_FLOWCHARTING_REACT_PANEL_STENCIL_URL=https://my-internal-mirror.exampl
 
 ## Disabling CDN fallback
 
-If you operate in a strict network environment where outbound requests to
-`stencils.drawio.com` must be blocked:
+For air-gapped or strict-CSP installs you can turn the CDN fallback **off** so
+the plugin never reaches out to `stencils.drawio.com`. A stencil that isn't
+bundled locally then renders as a blank placeholder instead of triggering an
+outbound request.
 
-1. Block the domain at the network level (firewall / egress policy).
-2. The plugin will attempt the CDN fetch, get a network error, and log a
-   warning in the browser console:
-   ```
-   [DrawioEngine] Stencil not found locally, trying CDN: https://stencils.drawio.com/…
-   ```
-3. The shape will not render (the cell will appear as a blank rectangle).
-4. Add the missing stencil file locally (Option A above) to fix it.
+Two ways to disable it:
 
-There is no configuration flag to disable the CDN fallback attempt — the
-worst case in a blocked environment is a failed `fetch()` that is silently
-caught, with no impact on the rest of the diagram.
+- **Plugin jsonData** — set `disableStencilCdn: true` in the plugin's config
+  (`config.panels['flowcharting-react-panel'].jsonData`).
+- **Global flag** — set `window.GF_FLOWCHARTING_NO_CDN = true` before the panel
+  loads (e.g. via a Grafana custom script / boot config).
+
+When disabled, missing stencils log a single warning and render blank:
+
+```
+[DrawioEngine] Stencil not found locally and CDN fallback disabled: <name>.xml
+```
+
+To make those shapes render, add the missing stencil file locally (Option A
+above). Even with the fallback enabled, blocking the domain at the network layer
+also works — the failed fetch is caught and the rest of the diagram is
+unaffected — but disabling the fallback avoids the request entirely.
+
+> **CSP note:** the draw.io viewer library is loaded with `eval()` (it is not an
+> ES module). Installations with a strict Content-Security-Policy that forbids
+> `unsafe-eval` will not be able to initialise the engine; the panel surfaces
+> the load error via its status overlay. This is a known limitation of
+> embedding the draw.io viewer.
 
 ---
 

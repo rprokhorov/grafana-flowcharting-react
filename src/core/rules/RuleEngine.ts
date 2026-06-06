@@ -53,6 +53,7 @@ export class RuleEngine {
     for (const xcell of xcells) {
       xcell.restoreAllStyles();
       xcell.restoreLabel();
+      xcell.restoreLink();
     }
 
     // Apply rules in order
@@ -67,41 +68,42 @@ export class RuleEngine {
         continue;
       }
 
-      // Evaluate the rule against the first matching metric
-      // (rule pattern typically matches one metric)
-      const metric = matchedMetrics[0];
-      const result = rule.evaluate(metric);
+      // Evaluate the rule against every matching metric. A regex pattern can
+      // match several series; we style with the most-critical (highest-level)
+      // result, but keep a tooltip entry per metric below.
+      const results = matchedMetrics.map((m) => ({ metric: m, result: rule.evaluate(m) }));
+      const result = results.reduce((best, cur) =>
+        cur.result.level > best.result.level ? cur : best
+      ).result;
 
-      // Find xcells matching this rule's shape/text/link maps
-      // We collect all xcells that any map targets
+      // Find xcells matching this rule's shape/text/link/event maps.
+      // Each map group carries its own options (identByProp / regex / metadata),
+      // so we must match using the group's options — not shapes' for all.
       const affectedCells = new Set<XCell>();
-      for (const mapData of [
-        ...rule.data.mapsDat.shapes.dataList,
-        ...rule.data.mapsDat.texts.dataList,
-        ...rule.data.mapsDat.links.dataList,
-        ...rule.data.mapsDat.events.dataList,
-      ]) {
-        const cells = xgraph.findXCells(
-          mapData.pattern,
-          rule.data.mapsDat.shapes.options
-        );
-        for (const c of cells) {
-          affectedCells.add(c);
+      const maps = rule.data.mapsDat;
+      for (const group of [maps.shapes, maps.texts, maps.links, maps.events]) {
+        for (const mapData of group.dataList) {
+          const cells = xgraph.findXCells(mapData.pattern, group.options);
+          for (const c of cells) {
+            affectedCells.add(c);
+          }
         }
       }
 
       // Apply maps
       rule.applyMapsToXCells(xgraph, xcells, result);
 
-      // Update state map — collect all matches, keep highest-level for styling
-      const match: CellRuleMatch = {
-        level: result.level,
-        color: result.color,
-        formattedValue: result.formattedValue,
-        rawValue: result.rawValue,
+      // Update state map — one tooltip entry per matched metric, keeping the
+      // highest-level result for the cell's visual styling.
+      const matches: CellRuleMatch[] = results.map(({ metric, result: r }) => ({
+        level: r.level,
+        color: r.color,
+        formattedValue: r.formattedValue,
+        rawValue: r.rawValue,
         ruleAlias: rule.data.alias,
-        metricPattern: rule.data.pattern,
-      };
+        // Use the concrete metric name so the tooltip can fetch its data points.
+        metricPattern: metric.name,
+      }));
 
       for (const xcell of affectedCells) {
         const existing = stateMap.get(xcell.getId());
@@ -113,10 +115,10 @@ export class RuleEngine {
             formattedValue: result.formattedValue,
             rawValue: result.rawValue,
             ruleAlias: rule.data.alias,
-            allMatches: [match],
+            allMatches: [...matches],
           });
         } else {
-          existing.allMatches.push(match);
+          existing.allMatches.push(...matches);
           if (result.level > existing.level) {
             existing.level = result.level;
             existing.color = result.color;

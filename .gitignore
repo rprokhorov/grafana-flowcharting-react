@@ -1,3 +1,10 @@
 node_modules/
 dist/
 *.js.map
+
+# Playwright / e2e
+.env
+playwright/.auth/
+e2e/test-results/
+playwright-report/
+test-results/
