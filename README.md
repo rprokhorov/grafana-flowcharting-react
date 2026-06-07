@@ -1,5 +1,8 @@
 # FlowCharting React
 
+[![CI](https://github.com/rprokhorov/grafana-flowcharting-react/actions/workflows/ci.yml/badge.svg)](https://github.com/rprokhorov/grafana-flowcharting-react/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 A Grafana 10+ **panel plugin** that renders [draw.io](https://www.drawio.com/) /
 mxGraph diagrams and binds them to Grafana metrics — color cells by thresholds,
 replace labels with values, trigger shape events, and show per-rule sparkline
@@ -71,6 +74,28 @@ spec/           Jest unit tests
 e2e/            Playwright e2e tests + fixtures
 ```
 
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/). See
+[CHANGELOG.md](CHANGELOG.md) for the history of changes. Releases are tagged
+`vMAJOR.MINOR.PATCH`; tagging a `v*` tag builds the plugin and attaches a
+packaged `.zip` to the GitHub Release (the built `dist/` is not committed).
+
+## Contributing
+
+Issues and pull requests are welcome. Before opening a PR:
+
+```bash
+npm install
+npx tsc --noEmit   # type-check
+npm test           # unit tests
+npm run build      # production build
+```
+
+For end-to-end tests against a real Grafana, see [TESTING.md](TESTING.md).
+
 ## License
 
-Apache-2.0
+Licensed under the [Apache License 2.0](LICENSE). The plugin bundles the
+draw.io / mxGraph viewer and shape libraries, which are also Apache-2.0
+licensed by their respective authors — see [NOTICE](NOTICE).
