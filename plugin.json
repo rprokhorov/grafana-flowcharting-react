@@ -5,11 +5,15 @@
   "info": {
     "description": "FlowCharting React panel — render and monitor draw.io diagrams with Grafana 10+ metrics",
     "author": {
-      "name": "FlowCharting Contributors"
+      "name": "Roman Prokhorov"
     },
     "keywords": ["flowchart", "panel", "diagram", "draw.io", "mxgraph"],
-    "version": "1.0.0",
-    "updated": "2026-03-20",
+    "version": "0.1.0",
+    "updated": "2026-06-07",
+    "links": [
+      { "name": "GitHub", "url": "https://github.com/rprokhorov/grafana-flowcharting-react" },
+      { "name": "License", "url": "https://github.com/rprokhorov/grafana-flowcharting-react/blob/main/LICENSE" }
+    ],
     "logos": {
       "small": "img/logo.svg",
       "large": "img/logo.svg"

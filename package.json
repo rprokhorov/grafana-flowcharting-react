@@ -1,7 +1,23 @@
 {
   "name": "grafana-flowcharting-react",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "FlowCharting React panel plugin for Grafana 10+",
+  "keywords": [
+    "grafana",
+    "grafana-panel",
+    "flowchart",
+    "drawio",
+    "mxgraph",
+    "diagram"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rprokhorov/grafana-flowcharting-react.git"
+  },
+  "homepage": "https://github.com/rprokhorov/grafana-flowcharting-react#readme",
+  "bugs": {
+    "url": "https://github.com/rprokhorov/grafana-flowcharting-react/issues"
+  },
   "scripts": {
     "build": "webpack --config webpack.config.js",
     "test": "jest --passWithNoTests",
@@ -13,7 +29,7 @@
     "e2e:debug": "playwright test --debug",
     "e2e:gen-dashboard": "ts-node --compiler-options '{\"module\":\"commonjs\"}' e2e/gen-dashboard.ts"
   },
-  "author": "FlowCharting Contributors",
+  "author": "Roman Prokhorov",
   "license": "Apache-2.0",
   "devDependencies": {
     "@grafana/data": "^10.4.0",
