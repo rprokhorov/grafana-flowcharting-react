@@ -8,7 +8,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.0] - 2026-06-07
 
-Initial public release. A React port of the Angular-based grafana-flowcharting
+Initial public release. A React port of the Angular-based
+[algenty/grafana-flowcharting](https://github.com/algenty/grafana-flowcharting)
 plugin for Grafana 10+, rendering draw.io / mxGraph diagrams bound to metrics.
 
 ### Added

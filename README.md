@@ -8,7 +8,10 @@ mxGraph diagrams and binds them to Grafana metrics — color cells by thresholds
 replace labels with values, trigger shape events, and show per-rule sparkline
 tooltips.
 
-This is a React port of the original Angular-based grafana-flowcharting plugin.
+This is an independent React port of the original Angular-based
+[algenty/grafana-flowcharting](https://github.com/algenty/grafana-flowcharting)
+plugin, rebuilt for Grafana 10+ (which dropped Angular panel support). It is a
+separate codebase, not a fork — see [Credits](#credits).
 
 - **Plugin id:** `flowcharting-react-panel`
 - **Type:** panel
@@ -93,6 +96,15 @@ npm run build      # production build
 ```
 
 For end-to-end tests against a real Grafana, see [TESTING.md](TESTING.md).
+
+## Credits
+
+This project is a ground-up React reimplementation inspired by, and a port of
+the ideas from, [algenty/grafana-flowcharting](https://github.com/algenty/grafana-flowcharting)
+(© Arnaud Genty, Apache-2.0) — the original Angular-based FlowCharting plugin
+for Grafana. Huge thanks to that project and its contributors. It also bundles
+the [draw.io](https://www.drawio.com/) / mxGraph viewer and shape libraries
+(© JGraph Ltd, Apache-2.0).
 
 ## License
 

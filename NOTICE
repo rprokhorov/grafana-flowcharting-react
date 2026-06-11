@@ -7,7 +7,10 @@ You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-This product is a React port of the original grafana-flowcharting plugin and
-bundles the draw.io / mxGraph viewer and shape libraries, which are themselves
-licensed under the Apache License 2.0 by their respective authors
+This product is a React port of the original grafana-flowcharting plugin
+(https://github.com/algenty/grafana-flowcharting, Copyright Arnaud Genty,
+licensed under the Apache License 2.0).
+
+It also bundles the draw.io / mxGraph viewer and shape libraries, which are
+themselves licensed under the Apache License 2.0 by their respective authors
 (JGraph Ltd / draw.io).
